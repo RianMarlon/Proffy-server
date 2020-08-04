@@ -7,9 +7,8 @@ export async function up(knex: Knex) {
     table.string('avatar').notNullable();
     table.string('whatsapp').notNullable();
     table.string('biography').notNullable();
-  })
+  });
 }
-
 
 export async function down(knex: Knex) {
   return knex.schema.dropTable('users');
