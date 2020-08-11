@@ -17,12 +17,6 @@ export default class ClassesController {
     const week_day = filters.week_day as string;
     const time = filters.time as string;
 
-    if (!week_day || !subject || !time) {
-      return response.status(400).json({
-        error: 'Missing filters to search classes'
-      });
-    }
-
     const timeInMinutes = convertHourToMinute(time);
 
     const classes = await db('classes')
@@ -30,11 +24,19 @@ export default class ClassesController {
         this.select('class_schedules.*')
           .from('class_schedules')
           .whereRaw('`class_schedules`.`id_class` = `classes`.`id`')
-          .whereRaw('`class_schedules`.`week_day` = ??', [Number(week_day)])
-          .whereRaw('`class_schedules`.`from` <= ??', [timeInMinutes])
-          .whereRaw('`class_schedules`.`to` > ??', [timeInMinutes])
+
+        if (week_day) {
+          this.whereRaw('`class_schedules`.`week_day` = ??', [Number(week_day)])
+        }
+
+        if (timeInMinutes) {
+          this.whereRaw('`class_schedules`.`from` <= ??', [timeInMinutes])
+          this.whereRaw('`class_schedules`.`to` > ??', [timeInMinutes])
+        }
       })
-      .where('classes.subject', '=', subject)
+      .where(function() {
+        subject && this.where('classes.subject', '=', subject);
+      })
       .join('users', 'classes.id_user', '=', 'users.id')
       .select(['classes.*', 'users.*']);
 
