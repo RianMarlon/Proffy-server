@@ -3,15 +3,15 @@ export default function convertNumberToWeekDay(day: number) {
     case 0:
       return 'Domingo';
     case 1:
-      return 'Segunda-Feira';
+      return 'Segunda';
     case 2:
-      return 'Terça-feira';
+      return 'Terça';
     case 3:
-      return 'Quarta-feira';
+      return 'Quarta';
     case 4:
-      return 'Quinta-feira';
+      return 'Quinta';
     case 5:
-      return 'Sexta-feira';
+      return 'Sexta';
     case 6:
       return 'Sábado';
     default:
