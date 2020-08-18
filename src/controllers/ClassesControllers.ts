@@ -51,8 +51,22 @@ export default class ClassesController {
     const subject = filters.subject as string;
     const week_day = filters.week_day as string;
     const time = filters.time as string;
+    
+    const page = parseInt(filters.page as string);
+    const perPage = parseInt(filters.per_page as string);
 
     const timeInMinutes = convertHourToMinute(time);
+
+    const limit = perPage;
+    const offset = perPage * (page - 1);
+
+    const whereSubject = await db('classes')
+      .where('subject', '=', subject).toString();
+
+    const subselectClasses = subject.trim() === ''
+      ? 'select * from classes'
+      : whereSubject
+    ;
 
     const classes = await db('classes')
       .whereExists(function() {
@@ -61,36 +75,37 @@ export default class ClassesController {
           .whereRaw('`class_schedules`.`id_class` = `classes`.`id`')
 
         if (week_day) {
-          this.whereRaw('`class_schedules`.`week_day` = ??', [Number(week_day)])
+          this.whereRaw('`class_schedules`.`week_day` = ??', [Number(week_day)]);
         }
 
         if (timeInMinutes) {
-          this.whereRaw('`class_schedules`.`from` <= ??', [timeInMinutes])
-          this.whereRaw('`class_schedules`.`to` > ??', [timeInMinutes])
+          this.whereRaw('`class_schedules`.`from` <= ??', [timeInMinutes]);
+          this.whereRaw('`class_schedules`.`to` > ??', [timeInMinutes]);
         }
-      })
-      .where(function() {
-        subject && this.where('classes.subject', '=', subject);
       })
       .join('users', 'classes.id_user', '=', 'users.id')
       .join('class_schedules', 'classes.id', '=', 'class_schedules.id_class')
-      .select(['classes.*', 'users.*', 'class_schedules.*']);
+      .select(['users.*', 'classes.*', 'class_schedules.*'])
+      .from(db.raw(`(${subselectClasses} limit ?? offset ??) as classes`, [
+        limit, offset
+      ]))
+      .orderBy(['classes.id', 'class_schedules.week_day', 'class_schedules.to']);
 
     const classesIds: number[] = [];
     const classesWithSchedules: ClassWithSchedules[] = [];
 
-    classes.forEach((classItem: ClassItem, index: number) => {
+    classes.forEach((classItem: ClassItem) => {
       if(!classesIds.includes(classItem.id_class)) {
         classesIds.push(classItem.id_class);
       }
     });
 
-    classesIds.forEach(((classId: number, index: number) => {
-      const classesById = classes.filter((classItem: ClassItem, index: number) => {
+    classesIds.forEach((classId: number) => {
+      const classesById = classes.filter((classItem: ClassItem) => {
         return classId === classItem.id_class;
       });
 
-      let data: ClassWithSchedules = {
+      const data: ClassWithSchedules = {
         id: 0,
         subject: '',
         cost: 0,
@@ -117,18 +132,16 @@ export default class ClassesController {
         }
 
         if (index === 0) {
-          data = {
-            id: classItem.id,
-            subject: classItem.subject,
-            cost: classItem.cost,
-            id_user: classItem.id_user,
-            name: classItem.name,
-            avatar: classItem.avatar,
-            whatsapp: classItem.whatsapp,
-            biography: classItem.biography,
-            id_class: classItem.id_class,
-            schedules: [{ ...schedule }]
-          }
+          data.id = classItem.id;
+          data.subject = classItem.subject;
+          data.cost = classItem.cost;
+          data.id_user = classItem.id_user;
+          data.name = classItem.name;
+          data.avatar = classItem.avatar;
+          data.whatsapp = classItem.whatsapp;
+          data.biography = classItem.biography;
+          data.id_class = classItem.id_class;
+          data.schedules = [{ ...schedule }];
         }
 
         else {
@@ -137,7 +150,7 @@ export default class ClassesController {
       });
 
       classesWithSchedules.push({ ...data });
-    }));
+    });
 
     return response.json(classesWithSchedules);
   }
