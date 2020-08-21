@@ -91,6 +91,33 @@ export default class ClassesController {
       ]))
       .orderBy(['classes.id', 'class_schedules.week_day', 'class_schedules.to']);
 
+    const countTeachers = await db('users')
+      .join('classes', 'classes.id_user', '=', 'users.id')
+      .countDistinct('users.id');
+
+    const countClasses = await db('classes')
+      .whereExists(function() {
+        this.select('class_schedules.*')
+          .from('class_schedules')
+          .whereRaw('`class_schedules`.`id_class` = `classes`.`id`')
+
+        if (week_day) {
+          this.whereRaw('`class_schedules`.`week_day` = ??', [Number(week_day)]);
+        }
+
+        if (timeInMinutes) {
+          this.whereRaw('`class_schedules`.`from` <= ??', [timeInMinutes]);
+          this.whereRaw('`class_schedules`.`to` > ??', [timeInMinutes]);
+        }
+      })
+      .join('users', 'classes.id_user', '=', 'users.id')
+      .join('class_schedules', 'classes.id', '=', 'class_schedules.id_class')
+      .countDistinct('classes.id')
+      .from(db.raw(`(${subselectClasses}) as classes`));
+
+    const quantityTeachers = countTeachers[0]['count(distinct `users`.`id`)'];
+    const quantityClasses = countClasses[0]['count(distinct `classes`.`id`)'];
+
     const classesIds: number[] = [];
     const classesWithSchedules: ClassWithSchedules[] = [];
 
@@ -152,7 +179,15 @@ export default class ClassesController {
       classesWithSchedules.push({ ...data });
     });
 
-    return response.json(classesWithSchedules);
+    const classesWithSchedulesData = {
+      classesByPage: [
+       ...classesWithSchedules
+      ],
+      quantityTeachers,
+      quantityClasses
+    };
+
+    return response.json(classesWithSchedulesData);
   }
 
   async create(request: Request, response: Response) {
