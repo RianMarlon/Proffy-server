@@ -35,13 +35,61 @@ interface ClassWithSchedules {
     week_day: string,
     from: string,
     to: string,
-  }]
+  }],
 }
 
 interface ScheduleItem {
   week_day: number,
   from: string,
-  to: string
+  to: string,
+}
+
+function convertClassesByIdToClassWithSchedules(classes: ClassItem[]) {
+  const data: ClassWithSchedules = {
+    id: 0,
+    subject: '',
+    cost: 0,
+    id_user: 0,
+    name: '',
+    avatar: '',
+    whatsapp: '',
+    biography: '',
+    id_class: 0,
+    schedules: [{
+      id: 0,
+      week_day: '',
+      from: '',
+      to: '',
+    }],
+  }
+
+  classes.forEach((classItem: ClassItem, index: number) => {
+    const schedule = {
+      id: classItem.id,
+      week_day: convertNumberToWeekDay(classItem.week_day),
+      from: convertMinutesToTime(classItem.from),
+      to: convertMinutesToTime(classItem.to),
+    }
+
+    if (index === 0) {
+      data.id = classItem.id;
+      data.subject = classItem.subject;
+      data.cost = classItem.cost;
+      data.id_user = classItem.id_user;
+      data.name = classItem.name;
+      data.avatar = classItem.avatar;
+      data.whatsapp = classItem.whatsapp;
+      data.biography = classItem.biography;
+      data.id_class = classItem.id_class;
+      data.schedules = [{ ...schedule }];
+    }
+
+    else {
+      data.schedules.push({ ...schedule });
+    }
+  });
+
+  return { ...data };
 }
 
 export default class ClassesController {
@@ -68,7 +116,7 @@ export default class ClassesController {
       : whereSubject
     ;
 
-    const classes = await db('classes')
+    const queryAllClasses = db('classes')
       .whereExists(function() {
         this.select('class_schedules.*')
           .from('class_schedules')
@@ -82,9 +130,11 @@ export default class ClassesController {
           this.whereRaw('`class_schedules`.`from` <= ??', [timeInMinutes]);
           this.whereRaw('`class_schedules`.`to` > ??', [timeInMinutes]);
         }
-      })
+      })      
       .join('users', 'classes.id_user', '=', 'users.id')
-      .join('class_schedules', 'classes.id', '=', 'class_schedules.id_class')
+      .join('class_schedules', 'classes.id', '=', 'class_schedules.id_class');
+
+    const classesByPage = await queryAllClasses
       .select(['users.*', 'classes.*', 'class_schedules.*'])
       .from(db.raw(`(${subselectClasses} limit ?? offset ??) as classes`, [
         limit, offset
@@ -95,23 +145,7 @@ export default class ClassesController {
       .join('classes', 'classes.id_user', '=', 'users.id')
       .countDistinct('users.id');
 
-    const countClasses = await db('classes')
-      .whereExists(function() {
-        this.select('class_schedules.*')
-          .from('class_schedules')
-          .whereRaw('`class_schedules`.`id_class` = `classes`.`id`')
-
-        if (week_day) {
-          this.whereRaw('`class_schedules`.`week_day` = ??', [Number(week_day)]);
-        }
-
-        if (timeInMinutes) {
-          this.whereRaw('`class_schedules`.`from` <= ??', [timeInMinutes]);
-          this.whereRaw('`class_schedules`.`to` > ??', [timeInMinutes]);
-        }
-      })
-      .join('users', 'classes.id_user', '=', 'users.id')
-      .join('class_schedules', 'classes.id', '=', 'class_schedules.id_class')
+    const countClasses = await queryAllClasses
       .countDistinct('classes.id')
       .from(db.raw(`(${subselectClasses}) as classes`));
 
@@ -121,62 +155,20 @@ export default class ClassesController {
     const classesIds: number[] = [];
     const classesWithSchedules: ClassWithSchedules[] = [];
 
-    classes.forEach((classItem: ClassItem) => {
+    classesByPage.forEach((classItem: ClassItem) => {
       if(!classesIds.includes(classItem.id_class)) {
         classesIds.push(classItem.id_class);
       }
     });
 
     classesIds.forEach((classId: number) => {
-      const classesById = classes.filter((classItem: ClassItem) => {
+      const classesById = classesByPage.filter((classItem: ClassItem) => {
         return classId === classItem.id_class;
       });
 
-      const data: ClassWithSchedules = {
-        id: 0,
-        subject: '',
-        cost: 0,
-        id_user: 0,
-        name: '',
-        avatar: '',
-        whatsapp: '',
-        biography: '',
-        id_class: 0,
-        schedules: [{
-          id: 0,
-          week_day: '',
-          from: '',
-          to: ''
-        }]
-      }
+      const classWithSchedules = convertClassesByIdToClassWithSchedules(classesById);
 
-      classesById.forEach((classItem: ClassItem, index: number) => {
-        const schedule = {
-          id: classItem.id,
-          week_day: convertNumberToWeekDay(classItem.week_day),
-          from: convertMinutesToTime(classItem.from),
-          to: convertMinutesToTime(classItem.to)
-        }
-
-        if (index === 0) {
-          data.id = classItem.id;
-          data.subject = classItem.subject;
-          data.cost = classItem.cost;
-          data.id_user = classItem.id_user;
-          data.name = classItem.name;
-          data.avatar = classItem.avatar;
-          data.whatsapp = classItem.whatsapp;
-          data.biography = classItem.biography;
-          data.id_class = classItem.id_class;
-          data.schedules = [{ ...schedule }];
-        }
-
-        else {
-          data.schedules.push({ ...schedule });
-        }
-      });
-
-      classesWithSchedules.push({ ...data });
+      classesWithSchedules.push({ ...classWithSchedules });
     });
 
     const classesWithSchedulesData = {
@@ -184,7 +176,7 @@ export default class ClassesController {
        ...classesWithSchedules
       ],
       quantityTeachers,
-      quantityClasses
+      quantityClasses,
     };
 
     return response.json(classesWithSchedulesData);
@@ -198,7 +190,7 @@ export default class ClassesController {
       biography,
       subject,
       cost,
-      schedules
+      schedules,
     } = request.body;
   
     const transaction = await db.transaction();
@@ -208,7 +200,7 @@ export default class ClassesController {
         name,
         avatar,
         whatsapp,
-        biography
+        biography,
       });
   
       const id_user = insertedUsersIds[0];
@@ -216,7 +208,7 @@ export default class ClassesController {
       const insertedClassesIds = await transaction('classes').insert({
         subject,
         cost,
-        id_user
+        id_user,
       });
   
       const id_class = insertedClassesIds[0];
@@ -226,7 +218,7 @@ export default class ClassesController {
           week_day: scheduleItem.week_day,
           from: convertHourToMinute(scheduleItem.from),
           to: convertHourToMinute(scheduleItem.to),
-          id_class
+          id_class,
         };
       });
   
