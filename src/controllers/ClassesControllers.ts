@@ -44,7 +44,7 @@ interface ScheduleItem {
   to: string,
 }
 
-export default class ClassesControllers {
+export default class ClassesController {
   static convertByIdToWithSchedules(classes: ClassItem[]) {
     const data: ClassWithSchedules = {
       id: 0,
@@ -93,7 +93,7 @@ export default class ClassesControllers {
     return { ...data };
   }
 
-  async index(request: Request, response: Response) {
+  async getWithSchedules(request: Request, response: Response) {
     const filters = request.query;
 
     const subject = filters.subject as string;
@@ -182,7 +182,7 @@ export default class ClassesControllers {
     return response.json(classesWithSchedulesData);
   }
 
-  async create(request: Request, response: Response) {
+  async insert(request: Request, response: Response) {
     const {
       name,
       avatar,
