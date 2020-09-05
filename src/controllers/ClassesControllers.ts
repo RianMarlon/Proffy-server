@@ -44,55 +44,55 @@ interface ScheduleItem {
   to: string,
 }
 
-function convertClassesByIdToClassWithSchedules(classes: ClassItem[]) {
-  const data: ClassWithSchedules = {
-    id: 0,
-    subject: '',
-    cost: 0,
-    id_user: 0,
-    name: '',
-    avatar: '',
-    whatsapp: '',
-    biography: '',
-    id_class: 0,
-    schedules: [{
+export default class ClassesControllers {
+  static convertByIdToWithSchedules(classes: ClassItem[]) {
+    const data: ClassWithSchedules = {
       id: 0,
-      week_day: '',
-      from: '',
-      to: '',
-    }],
+      subject: '',
+      cost: 0,
+      id_user: 0,
+      name: '',
+      avatar: '',
+      whatsapp: '',
+      biography: '',
+      id_class: 0,
+      schedules: [{
+        id: 0,
+        week_day: '',
+        from: '',
+        to: '',
+      }],
+    }
+  
+    classes.forEach((classItem: ClassItem, index: number) => {
+      const schedule = {
+        id: classItem.id,
+        week_day: convertNumberToWeekDay(classItem.week_day),
+        from: convertMinutesToTime(classItem.from),
+        to: convertMinutesToTime(classItem.to),
+      }
+  
+      if (index === 0) {
+        data.id = classItem.id;
+        data.subject = classItem.subject;
+        data.cost = classItem.cost;
+        data.id_user = classItem.id_user;
+        data.name = classItem.name;
+        data.avatar = classItem.avatar;
+        data.whatsapp = classItem.whatsapp;
+        data.biography = classItem.biography;
+        data.id_class = classItem.id_class;
+        data.schedules = [{ ...schedule }];
+      }
+  
+      else {
+        data.schedules.push({ ...schedule });
+      }
+    });
+  
+    return { ...data };
   }
 
-  classes.forEach((classItem: ClassItem, index: number) => {
-    const schedule = {
-      id: classItem.id,
-      week_day: convertNumberToWeekDay(classItem.week_day),
-      from: convertMinutesToTime(classItem.from),
-      to: convertMinutesToTime(classItem.to),
-    }
-
-    if (index === 0) {
-      data.id = classItem.id;
-      data.subject = classItem.subject;
-      data.cost = classItem.cost;
-      data.id_user = classItem.id_user;
-      data.name = classItem.name;
-      data.avatar = classItem.avatar;
-      data.whatsapp = classItem.whatsapp;
-      data.biography = classItem.biography;
-      data.id_class = classItem.id_class;
-      data.schedules = [{ ...schedule }];
-    }
-
-    else {
-      data.schedules.push({ ...schedule });
-    }
-  });
-
-  return { ...data };
-}
-
-export default class ClassesController {
   async index(request: Request, response: Response) {
     const filters = request.query;
 
@@ -166,7 +166,7 @@ export default class ClassesController {
         return classId === classItem.id_class;
       });
 
-      const classWithSchedules = convertClassesByIdToClassWithSchedules(classesById);
+      const classWithSchedules = ClassesController.convertByIdToWithSchedules(classesById);
 
       classesWithSchedules.push({ ...classWithSchedules });
     });
