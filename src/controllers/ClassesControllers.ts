@@ -100,8 +100,8 @@ export default class ClassesController {
     const week_day = filters.week_day as string;
     const time = filters.time as string;
     
-    const page = parseInt(filters.page as string);
-    const perPage = parseInt(filters.per_page as string);
+    const page = parseInt(filters.page as string) || 1;
+    const perPage = parseInt(filters.per_page as string) || 1;
 
     const timeInMinutes = convertHourToMinute(time);
 
