@@ -28,7 +28,9 @@ export default class UsersControllers {
       equalOrError(password, confirm_password, 'Senhas informadas não coincidem!');
 
       const userByEmail = await db('users')
-      .where('email', '=', email).first();
+        .select('id')
+        .where('email', '=', email)
+        .first();
       
       notExistOrError(userByEmail, 'E-mail informado já foi cadastrado!');
       
