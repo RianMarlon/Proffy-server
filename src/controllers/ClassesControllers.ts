@@ -1,9 +1,12 @@
 import { Request, Response } from 'express';
+import jwt from 'jsonwebtoken';
+import { promisify } from 'util';
 
 import db from '../database/connection';
 import convertHourToMinute from '../utils/convertHourToMinute';
 import convertMinutesToTime from '../utils/convertMinutesToTime';
 import convertNumberToWeekDay from '../utils/convertNumberToWeekDay';
+import { existOrError, notExistOrError } from '../utils/validate';
 
 interface ClassItem {
   id: number,
@@ -19,6 +22,8 @@ interface ClassItem {
   from: number,
   to: number,
 }
+
+const { authSecret } = require('../../.env');
 
 interface ClassWithSchedules {
   id: number,
@@ -183,27 +188,49 @@ export default class ClassesController {
   }
 
   async insert(request: Request, response: Response) {
+    const authHeader = request.headers.authorization;
+
+    if (!authHeader) {
+      return response.status(401).json({
+        error: 'Acesso não autorizado!',
+      });
+    }
+
+    const [scheme, token] = authHeader.split(" ");
+    const userOfToken: any = await promisify(jwt.verify)(token, authSecret);
+
     const {
-      name,
       avatar,
-      whatsapp,
       biography,
+      whatsapp,
       subject,
       cost,
       schedules,
     } = request.body;
+
+    const id_user = userOfToken.id;
+
+    const classByIdUser = await db('classes').select("*")
+      .where("id_user", "=", id_user)
+      .first();
   
     const transaction = await db.transaction();
-  
+        
     try {
-      const insertedUsersIds = await transaction('users').insert({
-        name,
-        avatar,
-        whatsapp,
-        biography,
-      });
-  
-      const id_user = insertedUsersIds[0];
+      notExistOrError(classByIdUser, "Usuário já possui aula cadastrada!");
+      existOrError(avatar, "Avatar não fornecido!");
+      existOrError(biography, "Biografia não informada!");
+      existOrError(whatsapp, "Whatsapp não informado!");
+      existOrError(subject, "Matéria não informada!");
+      existOrError(cost, "Preço não informado!");
+      existOrError(schedules, "Horário(s) não informado(s)!");
+
+      await transaction('users').update({
+          avatar,
+          biography,
+          whatsapp,
+        })
+        .where("id", "=", id_user);
   
       const insertedClassesIds = await transaction('classes').insert({
         subject,
@@ -214,10 +241,26 @@ export default class ClassesController {
       const id_class = insertedClassesIds[0];
   
       const classSchedules = schedules.map((scheduleItem: ScheduleItem) => {
+        existOrError(scheduleItem.week_day, "Dia da semana não informado!");
+        existOrError(scheduleItem.from, "Horário inicial não informado!");
+        existOrError(scheduleItem.to, "Horário final não informado!");
+
+        const weekDay = scheduleItem.week_day;
+        const from = convertHourToMinute(scheduleItem.from);
+        const to = convertHourToMinute(scheduleItem.to);
+
+        if (from > to) {
+          throw "Horário inicial maior que o horário final!";
+        }
+
+        else if (to - from < 30) {
+          throw "Necessário, no mínimo, disponibilidade de 30 minutos!";
+        }
+
         return {
-          week_day: scheduleItem.week_day,
-          from: convertHourToMinute(scheduleItem.from),
-          to: convertHourToMinute(scheduleItem.to),
+          week_day: weekDay,
+          from,
+          to,
           id_class,
         };
       });
@@ -232,7 +275,7 @@ export default class ClassesController {
       transaction.rollback();
   
       return response.status(400).json({
-        error: 'Unexpected error while creating new class'
+        error: err,
       });
     }
   }
