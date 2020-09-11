@@ -21,8 +21,18 @@ function equalOrError(valueA: any, valueB: any, msg: string) {
   if(valueA !== valueB) throw msg;
 }
 
+function validEmailOrError(email: string, msg: string) {
+  const regexValidateEmail = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
+  const isValidEmail = regexValidateEmail.test(email);
+
+  if(!isValidEmail) {
+    throw msg;
+  }
+}
+
 export {
   existOrError,
   notExistOrError,
-  equalOrError
+  equalOrError,
+  validEmailOrError
 }
