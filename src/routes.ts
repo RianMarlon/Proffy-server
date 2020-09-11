@@ -4,13 +4,17 @@ import ConnectionsControllers from './controllers/ConnectionsControllers';
 import UsersControllers from './controllers/UsersControllers';
 
 import authenticate from './middlewares/auth';
+import AuthControllers from './controllers/AuthControllers';
 
 const routes = express.Router();
 const classesControllers = new ClassesControllers();
 const connectionsControllers = new ConnectionsControllers();
 const usersControllers = new UsersControllers();
+const authControllers = new AuthControllers();
 
 routes.post('/signup', usersControllers.insert);
+routes.post('/signin', authControllers.signin);
+routes.post('/validate-token', authControllers.validateToken);
 
 routes.all('/classes', authenticate);
 routes.get('/classes', classesControllers.getWithSchedules);
