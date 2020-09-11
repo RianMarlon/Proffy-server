@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
-import {existOrError, notExistOrError, equalOrError} from '../utils/validate';
+import {existOrError, notExistOrError, equalOrError, validEmailOrError} from '../utils/validate';
 import db from '../database/connection';
 
 export default class UsersControllers {
@@ -17,12 +17,13 @@ export default class UsersControllers {
       email,
       password,
       confirm_password,
-    } = request.body; 
+    } = request.body;
 
     try {
       existOrError(first_name, 'Nome não informado!');
       existOrError(last_name, 'Sobrenome não informado!');
       existOrError(email, 'E-mail não informado!');
+      validEmailOrError(email, 'E-mail inválido!');
       existOrError(password, 'Senha não informada!');
       existOrError(confirm_password, 'Senha de confirmação não informada!');
       equalOrError(password, confirm_password, 'Senhas informadas não coincidem!');
