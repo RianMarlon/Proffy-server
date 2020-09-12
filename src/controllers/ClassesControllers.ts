@@ -8,12 +8,13 @@ import convertMinutesToTime from '../utils/convertMinutesToTime';
 import convertNumberToWeekDay from '../utils/convertNumberToWeekDay';
 import { existOrError, notExistOrError } from '../utils/validate';
 
-interface ClassItem {
+export interface ClassItem {
   id: number,
   subject: string,
   cost: number,
   id_user: number,
-  name: string,
+  first_name: string,
+  last_name: string,
   avatar: string
   whatsapp: string,
   biography: string,
@@ -50,6 +51,7 @@ interface ScheduleItem {
 }
 
 export default class ClassesController {
+  
   static convertByIdToWithSchedules(classes: ClassItem[]) {
     const data: ClassWithSchedules = {
       id: 0,
@@ -82,7 +84,7 @@ export default class ClassesController {
         data.subject = classItem.subject;
         data.cost = classItem.cost;
         data.id_user = classItem.id_user;
-        data.name = classItem.name;
+        data.name = `${classItem.first_name} ${classItem.last_name}` ;
         data.avatar = classItem.avatar;
         data.whatsapp = classItem.whatsapp;
         data.biography = classItem.biography;
@@ -210,27 +212,27 @@ export default class ClassesController {
 
     const id_user = userOfToken.id;
 
-    const classByIdUser = await db('classes').select("*")
-      .where("id_user", "=", id_user)
+    const classByIdUser = await db('classes')
+      .where('id_user', '=', id_user)
       .first();
   
     const transaction = await db.transaction();
         
     try {
-      notExistOrError(classByIdUser, "Usuário já possui aula cadastrada!");
-      existOrError(avatar, "Avatar não fornecido!");
-      existOrError(biography, "Biografia não informada!");
-      existOrError(whatsapp, "Whatsapp não informado!");
-      existOrError(subject, "Matéria não informada!");
-      existOrError(cost, "Preço não informado!");
-      existOrError(schedules, "Horário(s) não informado(s)!");
+      notExistOrError(classByIdUser, 'Usuário já possui aula cadastrada!');
+      existOrError(avatar, 'Avatar não fornecido!');
+      existOrError(biography, 'Biografia não informada!');
+      existOrError(whatsapp, 'Whatsapp não informado!');
+      existOrError(subject, 'Matéria não informada!');
+      existOrError(cost, 'Preço não informado!');
+      existOrError(schedules, 'Horário(s) não informado(s)!');
 
       await transaction('users').update({
           avatar,
           biography,
           whatsapp,
         })
-        .where("id", "=", id_user);
+        .where('id', '=', id_user);
   
       const insertedClassesIds = await transaction('classes').insert({
         subject,
@@ -241,20 +243,20 @@ export default class ClassesController {
       const id_class = insertedClassesIds[0];
   
       const classSchedules = schedules.map((scheduleItem: ScheduleItem) => {
-        existOrError(scheduleItem.week_day, "Dia da semana não informado!");
-        existOrError(scheduleItem.from, "Horário inicial não informado!");
-        existOrError(scheduleItem.to, "Horário final não informado!");
+        existOrError(scheduleItem.week_day, 'Dia da semana não informado!');
+        existOrError(scheduleItem.from, 'Horário inicial não informado!');
+        existOrError(scheduleItem.to, 'Horário final não informado!');
 
         const weekDay = scheduleItem.week_day;
         const from = convertHourToMinute(scheduleItem.from);
         const to = convertHourToMinute(scheduleItem.to);
 
         if (from > to) {
-          throw "Horário inicial maior que o horário final!";
+          throw 'Horário inicial maior que o horário final!';
         }
 
         else if (to - from < 30) {
-          throw "Necessário, no mínimo, disponibilidade de 30 minutos!";
+          throw 'Necessário, no mínimo, disponibilidade de 30 minutos!';
         }
 
         return {
