@@ -3,9 +3,11 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 import { promisify } from 'util';
 
-import { existOrError } from '../utils/validate';
+import { existOrError, equalOrError } from '../utils/validate';
 import db from '../database/connection';
 import emailService from '../modules/emailService';
+
+import UsersControllers from './UsersControllers';
 
 const { email: sender } = require('../config/emailService.json');
 const { authSecret } = require('../../.env');
@@ -112,6 +114,46 @@ export default class AuthControllers {
       });
 
     } catch(err) {
+      response.status(400).json({
+        error: err,
+      });
+    }
+  }
+
+  async changePassword(request: Request, response: Response) {
+    const { password, confirm_password, token } = request.body;
+
+    if (!token) {
+      return response.status(401).json({
+        error: 'Acesso não autorizado!'
+      });
+    }
+
+    try {
+      existOrError(password, 'Senha não informada!');
+      existOrError(confirm_password, 'Senha de confirmação não informada!');
+      equalOrError(password, confirm_password, 'Senhas informadas não coincidem!');
+
+      const user: any = await promisify(jwt.verify)(token, authSecret);
+
+      if (!user) {
+        return response.status(401).json({
+          error: 'Acesso não autorizado!'
+        });
+      }
+
+      const passwordEncrypted = UsersControllers.encryptPassword(password);
+
+      await db('users')
+        .update({
+          password: passwordEncrypted
+        })
+        .where('id', '=', user.id)
+        .then(() => response.status(201).send())
+        .catch((err) => response.status(500).send(err));
+
+    } catch(err) {
+      console.log(err);
       response.status(400).json({
         error: err,
       });
