@@ -15,7 +15,8 @@ export interface ClassItem {
   id_user: number,
   first_name: string,
   last_name: string,
-  avatar: string
+  email: string,
+  avatar: string,
   whatsapp: string,
   biography: string,
   id_class: number,
@@ -24,7 +25,6 @@ export interface ClassItem {
   to: number,
 }
 
-const { authSecret } = require('../../.env');
 
 interface ClassWithSchedules {
   id: number,
@@ -32,7 +32,8 @@ interface ClassWithSchedules {
   cost: number,
   id_user: number,
   name: string,
-  avatar: string
+  avatar: string,
+  email: string,
   whatsapp: string,
   biography: string,
   id_class: number,
@@ -50,6 +51,8 @@ interface ScheduleItem {
   to: string,
 }
 
+const { authSecret } = require('../../.env');
+
 export default class ClassesController {
   
   static convertByIdToWithSchedules(classes: ClassItem[]) {
@@ -59,6 +62,7 @@ export default class ClassesController {
       cost: 0,
       id_user: 0,
       name: '',
+      email: '',
       avatar: '',
       whatsapp: '',
       biography: '',
@@ -84,7 +88,8 @@ export default class ClassesController {
         data.subject = classItem.subject;
         data.cost = classItem.cost;
         data.id_user = classItem.id_user;
-        data.name = `${classItem.first_name} ${classItem.last_name}` ;
+        data.name = `${classItem.first_name} ${classItem.last_name}`;
+        data.email = classItem.email;
         data.avatar = classItem.avatar;
         data.whatsapp = classItem.whatsapp;
         data.biography = classItem.biography;
@@ -220,7 +225,6 @@ export default class ClassesController {
         
     try {
       notExistOrError(classByIdUser, 'Usuário já possui aula cadastrada!');
-      existOrError(avatar, 'Avatar não fornecido!');
       existOrError(biography, 'Biografia não informada!');
       existOrError(whatsapp, 'Whatsapp não informado!');
       existOrError(subject, 'Matéria não informada!');
@@ -228,7 +232,6 @@ export default class ClassesController {
       existOrError(schedules, 'Horário(s) não informado(s)!');
 
       await transaction('users').update({
-          avatar,
           biography,
           whatsapp,
         })
