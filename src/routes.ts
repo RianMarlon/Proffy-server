@@ -19,6 +19,9 @@ routes.post('/validate-token', authControllers.validateToken);
 routes.post('/forgot-password', authControllers.forgotPassword);
 routes.post('/change-password', authControllers.changePassword);
 
+routes.all('/me', authenticate);
+routes.get('/me', usersControllers.getUserByToken);
+
 routes.all('/classes', authenticate);
 routes.get('/classes', classesControllers.getWithSchedules);
 routes.post('/classes', classesControllers.insert);
