@@ -30,13 +30,12 @@ interface ClassWithSchedules {
   id: number,
   subject: string,
   cost: number,
-  id_user: number,
-  name: string,
+  last_name: string,
+  first_name: string,
   avatar: string,
   email: string,
   whatsapp: string,
   biography: string,
-  id_class: number,
   schedules: [{  
     id: number,
     week_day: string,
@@ -60,13 +59,12 @@ export default class ClassesController {
       id: 0,
       subject: '',
       cost: 0,
-      id_user: 0,
-      name: '',
+      last_name: '',
+      first_name: '',
       email: '',
       avatar: '',
       whatsapp: '',
       biography: '',
-      id_class: 0,
       schedules: [{
         id: 0,
         week_day: '',
@@ -87,13 +85,12 @@ export default class ClassesController {
         data.id = classItem.id;
         data.subject = classItem.subject;
         data.cost = classItem.cost;
-        data.id_user = classItem.id_user;
-        data.name = `${classItem.first_name} ${classItem.last_name}`;
+        data.first_name = classItem.first_name;
+        data.last_name = classItem.last_name
         data.email = classItem.email;
         data.avatar = classItem.avatar;
         data.whatsapp = classItem.whatsapp;
         data.biography = classItem.biography;
-        data.id_class = classItem.id_class;
         data.schedules = [{ ...schedule }];
       }
   
@@ -236,10 +233,10 @@ export default class ClassesController {
           whatsapp,
         })
         .where('id', '=', id_user);
-  
+        
       const insertedClassesIds = await transaction('classes').insert({
         subject,
-        cost,
+        cost: parseFloat(cost),
         id_user,
       });
   
