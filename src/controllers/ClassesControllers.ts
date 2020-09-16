@@ -201,7 +201,7 @@ export default class ClassesController {
     }
 
     const [scheme, token] = authHeader.split(" ");
-    const userOfToken: any = await promisify(jwt.verify)(token, authSecret);
+    const userByToken: any = await promisify(jwt.verify)(token, authSecret);
 
     const {
       avatar,
@@ -212,10 +212,10 @@ export default class ClassesController {
       schedules,
     } = request.body;
 
-    const id_user = userOfToken.id;
+    const idUser = userByToken.id;
 
     const classByIdUser = await db('classes')
-      .where('id_user', '=', id_user)
+      .where('id_user', '=', idUser)
       .first();
   
     const transaction = await db.transaction();
@@ -227,20 +227,26 @@ export default class ClassesController {
       existOrError(subject, 'Matéria não informada!');
       existOrError(cost, 'Preço não informado!');
       existOrError(schedules, 'Horário(s) não informado(s)!');
+      
+      if (biography.length > 500) {
+        throw 'Biografia tem mais de 500 caracteres!';
+      }
 
       await transaction('users').update({
           biography,
           whatsapp,
         })
-        .where('id', '=', id_user);
+        .where('id', '=', idUser);
+
+      const newCost = parseFloat(cost.replace(',', '.'));
         
       const insertedClassesIds = await transaction('classes').insert({
         subject,
-        cost: parseFloat(cost),
-        id_user,
+        cost: newCost.toFixed(2),
+        id_user: idUser,
       });
   
-      const id_class = insertedClassesIds[0];
+      const idClass = insertedClassesIds[0];
   
       const classSchedules = schedules.map((scheduleItem: ScheduleItem) => {
         existOrError(scheduleItem.week_day, 'Dia da semana não informado!');
@@ -263,7 +269,7 @@ export default class ClassesController {
           week_day: weekDay,
           from,
           to,
-          id_class,
+          id_class: idClass,
         };
       });
   
