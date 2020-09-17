@@ -2,14 +2,14 @@ import path from 'path';
 import nodemailer from 'nodemailer';
 
 const hbs = require('nodemailer-express-handlebars');
-const { host, port, user, pass } = require('../config/emailService.json');
+const { emailServiceData } = require('../../.env');
 
 let transport = nodemailer.createTransport({
-  host,
-  port,
+  host: emailServiceData.host,
+  port: emailServiceData.host,
   auth: {
-    user,
-    pass
+    user: emailServiceData.user,
+    pass: emailServiceData.pass
   }
 });
 

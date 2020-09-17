@@ -9,7 +9,9 @@ import emailService from '../modules/emailService';
 
 import UsersControllers from './UsersControllers';
 
-const { email: sender } = require('../config/emailService.json');
+const { emailServiceData } = require('../../.env');
+const sender = emailServiceData.email;
+
 const { authSecret } = require('../../.env');
 
 export default class AuthControllers {
