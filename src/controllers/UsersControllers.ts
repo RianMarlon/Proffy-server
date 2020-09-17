@@ -95,26 +95,49 @@ export default class UsersControllers {
 
     try {
       if (!authHeader) {
-        throw "Acesso não autorizado!";
+        throw 'Acesso não autorizado!';
       }
     
-      const [scheme, token] = authHeader.split(" ");
+      const [scheme, token] = authHeader.split(' ');
       const user: any = await promisify(jwt.verify)(token, authSecret);
 
-      const userWithClass = await db('users')
-        .select(['users.*', 'classes.*', 'class_schedules.*'])
-        .where('users.id', '=', user.id)
-        .join('classes', 'classes.id_user', '=', user.id)
-        .join('class_schedules', 'classes.id', '=', 'class_schedules.id_class')
-        .orderBy(['classes.id', 'class_schedules.week_day', 'class_schedules.to']);
-    
-      const userWithSchedules = UsersControllers.convertByIdToWithSchedules(userWithClass);
+      const classByIdUser = await db('classes')
+        .where('classes.id_user', '=', user.id)
+        .first();
 
-      return response.json({
-        user: {
-          ...userWithSchedules
-        }
-      });
+      if (classByIdUser) {
+        const userWithClass = await db('users')
+          .select(['users.*', 'classes.*', 'class_schedules.*'])
+          .where('users.id', '=', user.id)
+          .join('classes', 'classes.id_user', '=', user.id)
+          .join('class_schedules', 'classes.id', '=', 'class_schedules.id_class')
+          .orderBy(['classes.id', 'class_schedules.week_day', 'class_schedules.to']);
+
+        const userWithSchedules = UsersControllers.convertByIdToWithSchedules(userWithClass);
+
+        return response.json({
+          user: {
+            ...userWithSchedules,
+            isTeacher: true
+          }
+        });
+      }
+
+      else {
+        const userData = await db('users')
+          .select('users.*')
+          .where('users.id', '=', user.id)
+          .first();
+
+        delete userData.password;
+
+        return response.json({
+          user: {
+            ...userData,
+            isTeacher: false
+          }
+        });
+      }
 
     } catch (err) {
       return response.status(200).json({
