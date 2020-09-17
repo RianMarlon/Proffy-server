@@ -204,7 +204,6 @@ export default class ClassesController {
     const userByToken: any = await promisify(jwt.verify)(token, authSecret);
 
     const {
-      avatar,
       biography,
       whatsapp,
       subject,
@@ -261,8 +260,8 @@ export default class ClassesController {
           throw 'Horário inicial maior que o horário final!';
         }
 
-        else if (to - from < 30) {
-          throw 'Necessário, no mínimo, disponibilidade de 30 minutos!';
+        else if (to - from < 60) {
+          throw 'Necessário, no mínimo, disponibilidade de 1 hora!';
         }
 
         return {
