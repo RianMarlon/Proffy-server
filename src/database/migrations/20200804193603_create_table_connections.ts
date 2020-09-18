@@ -14,6 +14,13 @@ export async function up(knex: Knex) {
       .inTable('users')
       .onUpdate('CASCADE')
       .onDelete('CASCADE');
+
+    table.integer('id_teacher')
+      .notNullable()
+      .references('id')
+      .inTable('users')
+      .onUpdate('CASCADE')
+      .onDelete('CASCADE');
   });
 }
 
