@@ -1,6 +1,4 @@
 import { Request, Response } from 'express';
-import jwt from 'jsonwebtoken';
-import { promisify } from 'util';
 
 import db from '../database/connection';
 import convertHourToMinute from '../utils/convertHourToMinute';
@@ -25,7 +23,6 @@ export interface ClassItem {
   to: number,
 }
 
-
 interface ClassWithSchedules {
   id: number,
   subject: string,
@@ -49,8 +46,6 @@ interface ScheduleItem {
   from: string,
   to: string,
 }
-
-const { authSecret } = require('../../.env');
 
 export default class ClassesController {
   
@@ -192,26 +187,14 @@ export default class ClassesController {
   }
 
   async insert(request: Request, response: Response) {
-    const authHeader = request.headers.authorization;
-
-    if (!authHeader) {
-      return response.status(401).json({
-        error: 'Acesso não autorizado!',
-      });
-    }
-
-    const [scheme, token] = authHeader.split(" ");
-    const userByToken: any = await promisify(jwt.verify)(token, authSecret);
-
     const {
+      id: idUser,
       biography,
       whatsapp,
       subject,
       cost,
       schedules,
     } = request.body;
-
-    const idUser = userByToken.id;
 
     const classByIdUser = await db('classes')
       .where('id_user', '=', idUser)

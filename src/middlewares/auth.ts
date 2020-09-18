@@ -20,6 +20,7 @@ export default async function (request: Request, response: Response, next: NextF
       .first()
       .then((user) => {
         if (user) {
+          request.body.id = user.id;
           return next();
         }
 

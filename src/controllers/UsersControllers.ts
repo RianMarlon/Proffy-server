@@ -1,7 +1,5 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
-import { promisify } from 'util';
 
 import db from '../database/connection';
 import {existOrError, notExistOrError, equalOrError, validEmailOrError} from '../utils/validate';
@@ -36,8 +34,6 @@ export interface UserItem {
   from: number,
   to: number,
 }
-
-const { authSecret } = require('../../.env');
 
 export default class UsersControllers {
 
@@ -91,25 +87,18 @@ export default class UsersControllers {
   }
 
   async getUserByToken(request: Request, response: Response) {
-    const authHeader = request.headers.authorization;
+    const { id: idUser } = request.body
 
     try {
-      if (!authHeader) {
-        throw 'Acesso não autorizado!';
-      }
-    
-      const [scheme, token] = authHeader.split(' ');
-      const user: any = await promisify(jwt.verify)(token, authSecret);
-
       const classByIdUser = await db('classes')
-        .where('classes.id_user', '=', user.id)
+        .where('classes.id_user', '=', idUser)
         .first();
 
       if (classByIdUser) {
         const userWithClass = await db('users')
           .select(['users.*', 'classes.*', 'class_schedules.*'])
-          .where('users.id', '=', user.id)
-          .join('classes', 'classes.id_user', '=', user.id)
+          .where('users.id', '=', idUser)
+          .join('classes', 'classes.id_user', '=', idUser)
           .join('class_schedules', 'classes.id', '=', 'class_schedules.id_class')
           .orderBy(['classes.id', 'class_schedules.week_day', 'class_schedules.to']);
 
@@ -124,12 +113,26 @@ export default class UsersControllers {
       }
 
       else {
-        const userData = await db('users')
+        const userData = {
+          first_name: '',
+          last_name: '',
+          avatar: '',
+          email: '',
+          subject: '',
+          cost: '',
+          whatsapp: '',
+          biography: '',
+          schedules: [],
+        }
+        const user = await db('users')
           .select('users.*')
-          .where('users.id', '=', user.id)
+          .where('users.id', '=', idUser)
           .first();
 
-        delete userData.password;
+        userData.first_name = user.first_name;
+        userData.last_name = user.last_name
+        userData.email = user.email;
+        userData.avatar = user.avatar;
 
         return response.json({
           user: {
