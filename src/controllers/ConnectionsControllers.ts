@@ -12,18 +12,25 @@ export default class ConnectionsControllers {
   }
 
   async insert(request: Request, response: Response) {
-    const { id_user } = request.body;
-
+    const { id, id_teacher } = request.body;
+    
     try {
+      if (id != id_teacher) {
+        throw 'Não entre em contato com você mesmo, a conexão não será contada!'
+      }
+
       await db('connections').insert({
-        id_user
+        id_user: id,
+        id_teacher
       });
   
       return response.status(201).send();
     }
 
     catch(err) {
-      return response.status(400).send();
+      return response.status(400).json({
+        error: err
+      });
     }
   }
 }
