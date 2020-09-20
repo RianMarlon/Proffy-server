@@ -10,13 +10,13 @@ export default async function (request: Request, response: Response, next: NextF
 
   try {
     if (!authHeader) {
-      throw "Acesso não autorizado!";
+      throw 'Acesso não autorizado!';
     }
   
-    const [scheme, token] = authHeader.split(" ");
+    const [scheme, token] = authHeader.split(' ');
     const user: any = await promisify(jwt.verify)(token, authSecret);
     
-    db('users').where("id", "=", user.id)
+    db('users').where('id', '=', user.id)
       .first()
       .then((user) => {
         if (user) {
@@ -26,7 +26,7 @@ export default async function (request: Request, response: Response, next: NextF
 
         else {
           return response.status(400).json({
-            error: "Usuário não encontrado!"
+            error: 'Usuário não encontrado!'
           });
         }
       })
