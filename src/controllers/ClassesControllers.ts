@@ -214,6 +214,19 @@ export default class ClassesController {
         throw 'Biografia tem mais de 500 caracteres!';
       }
 
+      // Temporário até ocorrer alterações nos relacionamentos entre
+      // a tabela de matérias e a tabela de usuários
+      const validSubjects = [
+        'Biologia', 'Matemática', 'Física', 'Química',
+        'Português', 'Redação', 'História', 'Filosofia',
+        'Geografia', 'Sociologia', 'Inglês', 'Espanhol',
+        'Educação Física', 'Artes'
+      ];
+
+      if (!validSubjects.includes(subject)) {
+        throw 'Matéria não permitida!';
+      }
+      
       await transaction('users').update({
           biography,
           whatsapp,
@@ -245,6 +258,35 @@ export default class ClassesController {
 
         else if (to - from < 60) {
           throw 'Necessário, no mínimo, disponibilidade de 1 hora!';
+        }
+ 
+        const hasEqualWeekDayAndFromBetweenSchedules = (scheduleItem: ScheduleItem) => {
+          const scheduleWeekDay = scheduleItem.week_day;
+          const scheduleFrom = convertHourToMinute(scheduleItem.from);
+          const scheduleTo = convertHourToMinute(scheduleItem.to);
+
+          return scheduleWeekDay == weekDay && 
+            (from >= scheduleFrom && from <= scheduleTo );
+        }
+
+        const hasEqualWeekDayAndToBetweenSchedules = (scheduleItem: ScheduleItem) => {
+          const scheduleWeekDay = scheduleItem.week_day;
+          const scheduleFrom = convertHourToMinute(scheduleItem.from);
+          const scheduleTo = convertHourToMinute(scheduleItem.to);
+
+          return scheduleWeekDay == weekDay && 
+            (to >= scheduleFrom && to <= scheduleTo );
+        }
+
+        const schedulesByFrom = schedules.filter(hasEqualWeekDayAndToBetweenSchedules);
+        const schedulesByTo = schedules.filter(hasEqualWeekDayAndFromBetweenSchedules);
+
+        if (schedulesByFrom.length > 1) {
+          throw 'Aula com horário inicial entre os horários de outra';
+        }
+
+        else if (schedulesByTo.length > 1) {
+          throw 'Aula com horário final entre os horários de outra';
         }
 
         return {
