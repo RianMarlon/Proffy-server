@@ -282,11 +282,11 @@ export default class ClassesController {
         const schedulesByTo = schedules.filter(hasEqualWeekDayAndFromBetweenSchedules);
 
         if (schedulesByFrom.length > 1) {
-          throw 'Aula com horário inicial entre os horários de outra';
+          throw 'Aula com horário inicial entre o andamento de outra aula!';
         }
 
         else if (schedulesByTo.length > 1) {
-          throw 'Aula com horário final entre os horários de outra';
+          throw 'Aula com horário final entre o andamento de outra aula!';
         }
 
         return {
