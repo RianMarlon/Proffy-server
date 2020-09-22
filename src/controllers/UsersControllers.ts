@@ -1,9 +1,17 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
 
+import path from 'path';
+import fs from 'fs';
+import { promisify } from 'util';
+import jwt from 'jsonwebtoken';
 import db from '../database/connection';
+
+const { authSecret } = require('../../.env');
 import {existOrError, notExistOrError, equalOrError, validEmailOrError} from '../utils/validate';
 import convertMinutesToTime from '../utils/convertMinutesToTime';
+import convertHourToMinute from '../utils/convertHourToMinute';
+import compressImage from '../utils/compressImage';
 
 interface UsersWithClass {
   first_name: string,
@@ -35,11 +43,30 @@ export interface UserItem {
   to: number,
 }
 
+interface ScheduleItem {
+  week_day: number,
+  from: string,
+  to: string,
+}
+
 export default class UsersControllers {
 
   static encryptPassword(password: string) {
     const saltRounds = bcrypt.genSaltSync(10);
     return bcrypt.hashSync(password, saltRounds);
+  }
+
+  static removeImage(destination: string, url: string) {
+    const urlSplitted = url.split('/');
+    
+    const filename = urlSplitted.pop();
+
+    if (filename) {
+      const filePath = path.resolve(destination, filename);
+      fs.unlink(filePath, err => {
+        if(err) console.log(err);
+      });
+    }
   }
 
   static convertByIdToWithSchedules(user: UserItem[]) {
@@ -87,11 +114,11 @@ export default class UsersControllers {
   }
 
   async getUserByToken(request: Request, response: Response) {
-    const { id: idUser } = request.body
+    const { id: idUser } = request.body;
 
     try {
       const classByIdUser = await db('classes')
-        .where('classes.id_user', '=', idUser)
+        .where('id_user', '=', idUser)
         .first();
 
       if (classByIdUser) {
@@ -124,9 +151,10 @@ export default class UsersControllers {
           biography: '',
           schedules: [],
         }
+
         const user = await db('users')
-          .select('users.*')
-          .where('users.id', '=', idUser)
+          .select('*')
+          .where('id', '=', idUser)
           .first();
 
         userData.first_name = user.first_name;
@@ -167,6 +195,10 @@ export default class UsersControllers {
       existOrError(confirm_password, 'Senha de confirmação não informada!');
       equalOrError(password, confirm_password, 'Senhas informadas não coincidem!');
 
+      if (password.length < 6) {
+        throw 'Senha deve conter, no mínimo, 6 caracteres!';
+      }
+
       const userByEmail = await db('users')
         .select('id')
         .where('email', '=', email)
@@ -188,6 +220,143 @@ export default class UsersControllers {
     
     catch(err) {
       response.status(400).json({
+        error: err,
+      });
+    }
+  }
+
+  async update(request: Request, response: Response) {
+    const {
+      id: idUser,
+      biography,
+      whatsapp,
+      cost,
+      schedules,
+    } = request.body;
+
+    if (request.file) {
+      const { avatar: oldUrlAvatar } = await db('users')
+        .select('avatar')
+        .where('id', '=', idUser)
+        .first()
+        .catch((err) => console.log(err));
+
+      if (oldUrlAvatar) {
+        UsersControllers.removeImage(request.file.destination, oldUrlAvatar);
+      }
+
+      const { url } = await compressImage(request.file, 250);
+
+      return await db('users').update({
+        avatar: url,
+      })
+      .where('id', '=', idUser)
+      .then(() => response.status(201).send())
+      .catch(() => {
+        return response.status(400).json({
+          error: 'Erro ao fazer upload da imagem!',
+        });
+      }) 
+    }
+
+    const classByIdUser = await db('classes')
+      .where('id_user', '=', idUser)
+      .first();
+
+    const transaction = await db.transaction();
+
+    try {
+      existOrError(classByIdUser, 'Você não é professor, pode substituir apenas a foto!');
+      existOrError(biography, 'Biografia não informada!');
+      existOrError(whatsapp, 'Whatsapp não informado!');
+      existOrError(cost, 'Preço não informado!');
+      existOrError(schedules, 'Horário(s) não informado(s)!');
+
+      if (biography.length > 500) {
+        throw 'Biografia tem mais de 500 caracteres!';
+      }
+
+      await transaction('users').update({
+          biography,
+          whatsapp,
+        })
+        .where('id', '=', idUser);
+
+      const newCost = parseFloat(cost.replace(',', '.'));
+
+      await transaction('classes').update({
+          cost: newCost.toFixed(2),
+        })
+        .where('id', '=', classByIdUser.id);
+
+      await transaction('class_schedules')
+        .delete()
+        .where('id_class', '=', classByIdUser.id);
+  
+      const classSchedules = schedules.map((scheduleItem: ScheduleItem) => {
+        existOrError(scheduleItem.week_day, 'Dia da semana não informado!');
+        existOrError(scheduleItem.from, 'Horário inicial não informado!');
+        existOrError(scheduleItem.to, 'Horário final não informado!');
+
+        const weekDay = scheduleItem.week_day;
+        const from = convertHourToMinute(scheduleItem.from);
+        const to = convertHourToMinute(scheduleItem.to);
+
+        if (from > to) {
+          throw 'Horário inicial maior que o horário final!';
+        }
+
+        else if (to - from < 60) {
+          throw 'Necessário, no mínimo, disponibilidade de 1 hora!';
+        }
+
+        const hasEqualWeekDayAndFromBetweenSchedules = (scheduleItem: ScheduleItem) => {
+          const scheduleWeekDay = scheduleItem.week_day;
+          const scheduleFrom = convertHourToMinute(scheduleItem.from);
+          const scheduleTo = convertHourToMinute(scheduleItem.to);
+
+          return scheduleWeekDay == weekDay && 
+            (from >= scheduleFrom && from <= scheduleTo );
+        }
+
+        const hasEqualWeekDayAndToBetweenSchedules = (scheduleItem: ScheduleItem) => {
+          const scheduleWeekDay = scheduleItem.week_day;
+          const scheduleFrom = convertHourToMinute(scheduleItem.from);
+          const scheduleTo = convertHourToMinute(scheduleItem.to);
+
+          return scheduleWeekDay == weekDay && 
+            (to >= scheduleFrom && to <= scheduleTo );
+        }
+
+        const schedulesByFrom = schedules.filter(hasEqualWeekDayAndToBetweenSchedules);
+        const schedulesByTo = schedules.filter(hasEqualWeekDayAndFromBetweenSchedules);
+
+        if (schedulesByFrom.length > 1) {
+          throw 'Aula com horário inicial entre o andamento de outra aula!';
+        }
+
+        else if (schedulesByTo.length > 1) {
+          throw 'Aula com horário final entre o andamento de outra aula!';
+        }
+
+        return {
+          week_day: weekDay,
+          from,
+          to,
+          id_class: classByIdUser.id,
+        };
+      });
+
+      await transaction('class_schedules').insert(classSchedules);
+  
+      await transaction.commit();
+  
+      return response.status(201).send();
+
+    } catch (err) {
+      transaction.rollback();
+
+      return response.status(400).json({
         error: err,
       });
     }
