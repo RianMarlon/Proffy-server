@@ -6,6 +6,8 @@ import UsersControllers from './controllers/UsersControllers';
 import authenticate from './middlewares/auth';
 import AuthControllers from './controllers/AuthControllers';
 
+import multerConfig from './middlewares/multer';
+
 const routes = express.Router();
 const classesControllers = new ClassesControllers();
 const connectionsControllers = new ConnectionsControllers();
@@ -21,6 +23,7 @@ routes.post('/change-password', authControllers.changePassword);
 
 routes.all('/me', authenticate);
 routes.get('/me', usersControllers.getUserByToken);
+routes.put('/me', multerConfig.single('avatar'), authenticate, usersControllers.update);
 
 routes.all('/classes', authenticate);
 routes.get('/classes', classesControllers.getWithSchedules);
