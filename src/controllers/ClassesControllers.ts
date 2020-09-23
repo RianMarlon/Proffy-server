@@ -1,13 +1,14 @@
 import { Request, Response } from 'express';
 
 import db from '../database/connection';
+
 import convertHourToMinute from '../utils/convertHourToMinute';
 import convertMinutesToTime from '../utils/convertMinutesToTime';
 import convertNumberToWeekDay from '../utils/convertNumberToWeekDay';
 import { existOrError, notExistOrError } from '../utils/validate';
 
 export interface ClassItem {
-  id: number,
+  id_class: number,
   subject: string,
   cost: number,
   id_user: number,
@@ -17,14 +18,14 @@ export interface ClassItem {
   avatar: string,
   whatsapp: string,
   biography: string,
-  id_class: number,
+  id_class_schedule: number,
   week_day: number,
   from: number,
   to: number,
 }
 
 interface ClassWithSchedules {
-  id: number,
+  id_class: number,
   subject: string,
   cost: number,
   last_name: string,
@@ -34,7 +35,7 @@ interface ClassWithSchedules {
   whatsapp: string,
   biography: string,
   schedules: [{  
-    id: number,
+    id_class_schedule: number,
     week_day: string,
     from: string,
     to: string,
@@ -42,6 +43,7 @@ interface ClassWithSchedules {
 }
 
 interface ScheduleItem {
+  id_class_schedule: number,
   week_day: number,
   from: string,
   to: string,
@@ -51,7 +53,7 @@ export default class ClassesController {
   
   static convertByIdToWithSchedules(classes: ClassItem[]) {
     const data: ClassWithSchedules = {
-      id: 0,
+      id_class: 0,
       subject: '',
       cost: 0,
       last_name: '',
@@ -61,7 +63,7 @@ export default class ClassesController {
       whatsapp: '',
       biography: '',
       schedules: [{
-        id: 0,
+        id_class_schedule: 0,
         week_day: '',
         from: '',
         to: '',
@@ -70,14 +72,14 @@ export default class ClassesController {
   
     classes.forEach((classItem: ClassItem, index: number) => {
       const schedule = {
-        id: classItem.id,
+        id_class_schedule: classItem.id_class_schedule,
         week_day: convertNumberToWeekDay(classItem.week_day),
         from: convertMinutesToTime(classItem.from),
         to: convertMinutesToTime(classItem.to),
       }
   
       if (index === 0) {
-        data.id = classItem.id;
+        data.id_class = classItem.id_class;
         data.subject = classItem.subject;
         data.cost = classItem.cost;
         data.first_name = classItem.first_name;
@@ -139,7 +141,13 @@ export default class ClassesController {
       .join('class_schedules', 'classes.id', '=', 'class_schedules.id_class');
 
     const classesByPage = await queryAllClasses
-      .select(['users.*', 'classes.*', 'class_schedules.*'])
+      .select([
+        'users.*',
+        'classes.*',
+        'classes.id as id_class',
+        'class_schedules.*',
+        'class_schedules.id as id_class_schedule'
+      ])
       .from(db.raw(`(${subselectClasses} limit ?? offset ??) as classes`, [
         limit, offset
       ]))
