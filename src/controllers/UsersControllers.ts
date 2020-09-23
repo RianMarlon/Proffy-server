@@ -3,11 +3,9 @@ import bcrypt from 'bcrypt';
 
 import path from 'path';
 import fs from 'fs';
-import { promisify } from 'util';
-import jwt from 'jsonwebtoken';
+
 import db from '../database/connection';
 
-const { authSecret } = require('../../.env');
 import {existOrError, notExistOrError, equalOrError, validEmailOrError} from '../utils/validate';
 import convertMinutesToTime from '../utils/convertMinutesToTime';
 import convertHourToMinute from '../utils/convertHourToMinute';
@@ -134,7 +132,7 @@ export default class UsersControllers {
         return response.json({
           user: {
             ...userWithSchedules,
-            isTeacher: true
+            isTeacher: true,
           }
         });
       }
@@ -165,7 +163,7 @@ export default class UsersControllers {
         return response.json({
           user: {
             ...userData,
-            isTeacher: false
+            isTeacher: false,
           }
         });
       }

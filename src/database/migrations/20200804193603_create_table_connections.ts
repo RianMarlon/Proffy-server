@@ -15,10 +15,10 @@ export async function up(knex: Knex) {
       .onUpdate('CASCADE')
       .onDelete('CASCADE');
 
-    table.integer('id_teacher')
+    table.integer('id_class')
       .notNullable()
       .references('id')
-      .inTable('users')
+      .inTable('classes')
       .onUpdate('CASCADE')
       .onDelete('CASCADE');
   });
