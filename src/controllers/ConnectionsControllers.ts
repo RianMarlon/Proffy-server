@@ -12,16 +12,21 @@ export default class ConnectionsControllers {
   }
 
   async insert(request: Request, response: Response) {
-    const { id, id_teacher } = request.body;
+    const { id, id_class: idClass } = request.body;
+
+    const classByIdUser = await db('classes')
+      .where('id', '=', idClass)
+      .where('id_user', '=', id)
+      .first();
     
     try {
-      if (id != id_teacher) {
-        throw 'Não entre em contato com você mesmo, a conexão não será contada!'
+      if (classByIdUser) {
+        throw 'Não entre em contato com você mesmo, a conexão não será contada!';
       }
 
       await db('connections').insert({
         id_user: id,
-        id_teacher
+        id_class: idClass,
       });
   
       return response.status(201).send();
