@@ -20,7 +20,9 @@ interface UsersWithClass {
   cost: number,
   whatsapp: string,
   biography: string,
-  schedules: [{  
+  id_class: number,
+  schedules: [{
+    id_class_schedule: number,
     week_day: number,
     from: string,
     to: string,
@@ -36,6 +38,8 @@ export interface UserItem {
   cost: number,
   whatsapp: string,
   biography: string,
+  id_class: number,
+  id_class_schedule: number,
   week_day: number,
   from: number,
   to: number,
@@ -77,7 +81,9 @@ export default class UsersControllers {
       avatar: '',
       whatsapp: '',
       biography: '',
+      id_class: 0,
       schedules: [{
+        id_class_schedule: 0,
         week_day: 0,
         from: '',
         to: '',
@@ -86,6 +92,7 @@ export default class UsersControllers {
   
     user.forEach((userItem: UserItem, index: number) => {
       const schedule = {
+        id_class_schedule: userItem.id_class_schedule,
         week_day: userItem.week_day,
         from: convertMinutesToTime(userItem.from),
         to: convertMinutesToTime(userItem.to),
@@ -95,11 +102,12 @@ export default class UsersControllers {
         data.subject = userItem.subject;
         data.cost = userItem.cost;
         data.first_name = userItem.first_name;
-        data.last_name = userItem.last_name
+        data.last_name = userItem.last_name;
         data.email = userItem.email;
         data.avatar = userItem.avatar;
         data.whatsapp = userItem.whatsapp;
         data.biography = userItem.biography;
+        data.id_class = userItem.id_class;
         data.schedules = [{ ...schedule }];
       }
   
@@ -121,10 +129,17 @@ export default class UsersControllers {
 
       if (classByIdUser) {
         const userWithClass = await db('users')
-          .select(['users.*', 'classes.*', 'class_schedules.*'])
-          .where('users.id', '=', idUser)
-          .join('classes', 'classes.id_user', '=', idUser)
+          .select([
+            'users.*',
+            'classes.*',
+            'class_schedules.*',
+            'class_schedules.id as id_class_schedule',
+            'subjects.*'
+          ])
+          .join('classes', 'classes.id_user', '=', 'users.id')
+          .join('subjects', 'classes.id_subject', '=', 'subjects.id')
           .join('class_schedules', 'classes.id', '=', 'class_schedules.id_class')
+          .where('users.id', '=', idUser)
           .orderBy(['classes.id', 'class_schedules.week_day', 'class_schedules.to']);
 
         const userWithSchedules = UsersControllers.convertByIdToWithSchedules(userWithClass);
@@ -132,7 +147,7 @@ export default class UsersControllers {
         return response.json({
           user: {
             ...userWithSchedules,
-            isTeacher: true,
+            isTeacher: true
           }
         });
       }
@@ -163,7 +178,7 @@ export default class UsersControllers {
         return response.json({
           user: {
             ...userData,
-            isTeacher: false,
+            isTeacher: false
           }
         });
       }
@@ -177,21 +192,21 @@ export default class UsersControllers {
 
   async insert(request: Request, response: Response) {
     const {
-      first_name,
-      last_name,
+      first_name: firstName,
+      last_name: lastName,
       email,
       password,
-      confirm_password,
+      confirm_password: confirmPassword,
     } = request.body;
 
     try {
-      existOrError(first_name, 'Nome não informado!');
-      existOrError(last_name, 'Sobrenome não informado!');
+      existOrError(firstName, 'Nome não informado!');
+      existOrError(lastName, 'Sobrenome não informado!');
       existOrError(email, 'E-mail não informado!');
       validEmailOrError(email, 'E-mail inválido!');
       existOrError(password, 'Senha não informada!');
-      existOrError(confirm_password, 'Senha de confirmação não informada!');
-      equalOrError(password, confirm_password, 'Senhas informadas não coincidem!');
+      existOrError(confirmPassword, 'Senha de confirmação não informada!');
+      equalOrError(password, confirmPassword, 'Senhas informadas não coincidem!');
 
       if (password.length < 6) {
         throw 'Senha deve conter, no mínimo, 6 caracteres!';
@@ -207,8 +222,8 @@ export default class UsersControllers {
       const passwordEncrypted = UsersControllers.encryptPassword(password);
       
       db('users').insert({
-        first_name,
-        last_name,
+        first_name: firstName,
+        last_name: lastName,
         email,
         password: passwordEncrypted,
       })
@@ -246,15 +261,15 @@ export default class UsersControllers {
       const { url } = await compressImage(request.file, 250);
 
       return await db('users').update({
-        avatar: url,
-      })
-      .where('id', '=', idUser)
-      .then(() => response.status(201).send())
-      .catch(() => {
-        return response.status(400).json({
-          error: 'Erro ao fazer upload da imagem!',
+          avatar: url,
+        })
+        .where('id', '=', idUser)
+        .then(() => response.status(201).send())
+        .catch(() => {
+          return response.status(400).json({
+            error: 'Erro ao fazer upload da imagem!',
+          });
         });
-      }) 
     }
 
     const classByIdUser = await db('classes')
@@ -285,14 +300,17 @@ export default class UsersControllers {
       await transaction('classes').update({
           cost: newCost.toFixed(2),
         })
-        .where('id', '=', classByIdUser.id);
+        .where('id_user', '=', classByIdUser.id);
 
       await transaction('class_schedules')
         .delete()
         .where('id_class', '=', classByIdUser.id);
   
       const classSchedules = schedules.map((scheduleItem: ScheduleItem) => {
-        existOrError(scheduleItem.week_day, 'Dia da semana não informado!');
+        if(scheduleItem.week_day < 0 || scheduleItem.week_day > 6) {
+          throw 'Dia da semana não informado!';
+        }
+
         existOrError(scheduleItem.from, 'Horário inicial não informado!');
         existOrError(scheduleItem.to, 'Horário final não informado!');
 
