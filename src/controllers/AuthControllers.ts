@@ -3,9 +3,10 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 import { promisify } from 'util';
 
-import { existOrError, equalOrError } from '../utils/validate';
 import db from '../database/connection';
 import emailService from '../modules/emailService';
+
+import { existOrError, equalOrError } from '../utils/validate';
 
 import UsersControllers from './UsersControllers';
 
@@ -123,7 +124,11 @@ export default class AuthControllers {
   }
 
   async changePassword(request: Request, response: Response) {
-    const { password, confirm_password, token } = request.body;
+    const {
+      password,
+      confirm_password: confirmPassword,
+      token
+    } = request.body;
 
     if (!token) {
       return response.status(401).json({
@@ -133,8 +138,8 @@ export default class AuthControllers {
 
     try {
       existOrError(password, 'Senha não informada!');
-      existOrError(confirm_password, 'Senha de confirmação não informada!');
-      equalOrError(password, confirm_password, 'Senhas informadas não coincidem!');
+      existOrError(confirmPassword, 'Senha de confirmação não informada!');
+      equalOrError(password, confirmPassword, 'Senhas informadas não coincidem!');
 
       const user: any = await promisify(jwt.verify)(token, authSecret);
 

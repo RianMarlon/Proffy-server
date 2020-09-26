@@ -1,7 +1,6 @@
 import { Request, Response } from 'express';
 
 import db from '../database/connection';
-
 import convertHourToMinute from '../utils/convertHourToMinute';
 import convertMinutesToTime from '../utils/convertMinutesToTime';
 import convertNumberToWeekDay from '../utils/convertNumberToWeekDay';
@@ -102,7 +101,7 @@ export default class ClassesController {
   async getWithSchedules(request: Request, response: Response) {
     const filters = request.query;
 
-    const subject = filters.subject as string;
+    const idSubject = filters.id_subject as string;
     const week_day = filters.week_day as string;
     const time = filters.time as string;
     
@@ -114,19 +113,29 @@ export default class ClassesController {
     const limit = perPage;
     const offset = perPage * (page - 1);
 
-    const whereSubject = await db('classes')
-      .where('subject', '=', subject).toString();
+    const subjectById = await db('subjects')
+      .where('id', '=', idSubject)
+      .first();
 
-    const subselectClasses = subject.trim() === ''
-      ? 'select * from classes'
-      : whereSubject
+    const whereClassByIdSubject = await db('classes')
+      .join('subjects', 'classes.id_subject', 'subjects.id')
+      .where('subjects.id', '=', idSubject)
+      .toString();
+      
+    const subselectClasses = subjectById
+      ? whereClassByIdSubject
+      : `
+        select classes.* from classes
+        inner join subjects 
+        on (classes.id_subject = subjects.id)
+      `
     ;
 
     const queryAllClasses = db('classes')
       .whereExists(function() {
         this.select('class_schedules.*')
           .from('class_schedules')
-          .whereRaw('`class_schedules`.`id_class` = `classes`.`id`')
+          .whereRaw('`class_schedules`.`id_class` = `classes`.`id`');
 
         if (week_day) {
           this.whereRaw('`class_schedules`.`week_day` = ??', [Number(week_day)]);
@@ -136,7 +145,8 @@ export default class ClassesController {
           this.whereRaw('`class_schedules`.`from` <= ??', [timeInMinutes]);
           this.whereRaw('`class_schedules`.`to` > ??', [timeInMinutes]);
         }
-      })      
+      })
+      .join('subjects', 'classes.id_subject', '=', `subjects.id`)
       .join('users', 'classes.id_user', '=', 'users.id')
       .join('class_schedules', 'classes.id', '=', 'class_schedules.id_class');
 
@@ -144,25 +154,24 @@ export default class ClassesController {
       .select([
         'users.*',
         'classes.*',
-        'classes.id as id_class',
         'class_schedules.*',
-        'class_schedules.id as id_class_schedule'
+        'class_schedules.id as id_class_schedule',
+        'subjects.*'
       ])
       .from(db.raw(`(${subselectClasses} limit ?? offset ??) as classes`, [
         limit, offset
       ]))
-      .orderBy(['classes.id', 'class_schedules.week_day', 'class_schedules.to']);
+      .orderBy([
+        'class_schedules.week_day',
+        'class_schedules.to'
+      ]);
 
-    const countTeachers = await db('users')
-      .join('classes', 'classes.id_user', '=', 'users.id')
-      .countDistinct('users.id');
+    const countTeachersAndClasses = await db('classes')
+      .countDistinct('classes.id_user')
+      .countDistinct('classes.id');
 
-    const countClasses = await queryAllClasses
-      .countDistinct('classes.id')
-      .from(db.raw(`(${subselectClasses}) as classes`));
-
-    const quantityTeachers = countTeachers[0]['count(distinct `users`.`id`)'];
-    const quantityClasses = countClasses[0]['count(distinct `classes`.`id`)'];
+    const quantityTeachers = countTeachersAndClasses[0]['count(distinct `classes`.`id_user`)'];
+    const quantityClasses = countTeachersAndClasses[0]['count(distinct `classes`.`id`)'];
 
     const classesIds: number[] = [];
     const classesWithSchedules: ClassWithSchedules[] = [];
@@ -199,7 +208,7 @@ export default class ClassesController {
       id: idUser,
       biography,
       whatsapp,
-      subject,
+      id_subject: idSubject,
       cost,
       schedules,
     } = request.body;
@@ -207,32 +216,24 @@ export default class ClassesController {
     const classByIdUser = await db('classes')
       .where('id_user', '=', idUser)
       .first();
+
+    const subjectById = await db('subjects')
+      .where('id', '=', idSubject)
+      .first();
   
     const transaction = await db.transaction();
-        
+
     try {
       notExistOrError(classByIdUser, 'Usuário já possui aula cadastrada!');
       existOrError(biography, 'Biografia não informada!');
       existOrError(whatsapp, 'Whatsapp não informado!');
-      existOrError(subject, 'Matéria não informada!');
+      existOrError(idSubject, 'Matéria não informada!');
+      existOrError(subjectById, 'Matéria inválida!');
       existOrError(cost, 'Preço não informado!');
       existOrError(schedules, 'Horário(s) não informado(s)!');
       
       if (biography.length > 500) {
         throw 'Biografia tem mais de 500 caracteres!';
-      }
-
-      // Temporário até ocorrer alterações nos relacionamentos entre
-      // a tabela de matérias e a tabela de usuários
-      const validSubjects = [
-        'Biologia', 'Matemática', 'Física', 'Química',
-        'Português', 'Redação', 'História', 'Filosofia',
-        'Geografia', 'Sociologia', 'Inglês', 'Espanhol',
-        'Educação Física', 'Artes'
-      ];
-
-      if (!validSubjects.includes(subject)) {
-        throw 'Matéria não permitida!';
       }
       
       await transaction('users').update({
@@ -244,9 +245,9 @@ export default class ClassesController {
       const newCost = parseFloat(cost.replace(',', '.'));
         
       const insertedClassesIds = await transaction('classes').insert({
-        subject,
-        cost: newCost.toFixed(2),
         id_user: idUser,
+        id_subject: idSubject,
+        cost: newCost.toFixed(2),
       });
   
       const idClass = insertedClassesIds[0];
