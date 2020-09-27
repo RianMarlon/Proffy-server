@@ -18,10 +18,19 @@ export default class ConnectionsControllers {
       .where('id', '=', idClass)
       .where('id_user', '=', id)
       .first();
+
+    const connectionByUserAndClass = await db('connections')
+      .where('id_user', '=', id)
+      .where('id_class', '=', idClass)
+      .first();
     
     try {
       if (classByIdUser) {
         throw 'Não entre em contato com você mesmo, a conexão não será contada!';
+      }
+
+      if (connectionByUserAndClass) {
+        return;
       }
 
       await db('connections').insert({
