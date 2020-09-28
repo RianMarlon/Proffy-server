@@ -1,7 +1,9 @@
 import express from 'express';
+
+import SubjectsControllers from './controllers/SubjectsControllers';
+import UsersControllers from './controllers/UsersControllers';
 import ClassesControllers from './controllers/ClassesControllers';
 import ConnectionsControllers from './controllers/ConnectionsControllers';
-import UsersControllers from './controllers/UsersControllers';
 
 import authenticate from './middlewares/auth';
 import AuthControllers from './controllers/AuthControllers';
@@ -9,6 +11,7 @@ import AuthControllers from './controllers/AuthControllers';
 import multerConfig from './middlewares/multer';
 
 const routes = express.Router();
+const subjectsControllers = new SubjectsControllers()
 const classesControllers = new ClassesControllers();
 const connectionsControllers = new ConnectionsControllers();
 const usersControllers = new UsersControllers();
@@ -32,5 +35,8 @@ routes.post('/classes', classesControllers.insert);
 routes.all('/connections', authenticate);
 routes.get('/connections', connectionsControllers.getCount);
 routes.post('/connections', connectionsControllers.insert);
+
+routes.all('/subjects', authenticate);
+routes.get('/subjects', subjectsControllers.getAll);
 
 export default routes;
