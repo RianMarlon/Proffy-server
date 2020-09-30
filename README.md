@@ -8,11 +8,6 @@
 - Rota para solicitar um link que será enviado ao e-mail do usuário, para a alteração de senha;
 - Rota para alterar a senha; 
 
-## Conexões
-
-- Rota para listar o total de conexões realizadas;
-- Rota para criar uma nova conexão;
-
 ## Aulas
 
 - Rota para criar uma aula;
@@ -24,3 +19,12 @@
 - Rota para cadastrar um usuário;
 - Rota para atualizar os dados do usuário, como a foto;
 - Rota para listar os dados do usuário;
+
+## Conexões
+
+- Rota para listar o total de conexões realizadas;
+- Rota para criar uma nova conexão;
+
+## Matérias
+
+-- Rota para listar as matérias;
