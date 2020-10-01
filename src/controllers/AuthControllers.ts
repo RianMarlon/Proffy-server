@@ -18,8 +18,8 @@ const { authSecret } = require('../../.env');
 export default class AuthControllers {
   
   async signin(request: Request, response: Response) {
-    const { email, password } = request.body;
-    
+    const { email, password, remember_me } = request.body;
+
     try {
       existOrError(email, 'E-mail não informado!');
       existOrError(password, 'Senha não informada!');
@@ -39,7 +39,7 @@ export default class AuthControllers {
       }
 
       const token = jwt.sign({ ...payload }, authSecret, {
-        expiresIn: '7d',
+        expiresIn: remember_me ? '7d' : '1d',
       });
       
       return response.status(200).json({
