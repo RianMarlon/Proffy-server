@@ -9,6 +9,7 @@ import db from '../database/connection';
 import {existOrError, notExistOrError, equalOrError, validEmailOrError} from '../utils/validate';
 import convertMinutesToTime from '../utils/convertMinutesToTime';
 import convertHourToMinute from '../utils/convertHourToMinute';
+import convertEmailToUrlGravatar from '../utils/convertEmailToUrlGravatar';
 import compressImage from '../utils/compressImage';
 
 interface UsersWithClass {
@@ -218,6 +219,8 @@ export default class UsersControllers {
         .first();
       
       notExistOrError(userByEmail, 'E-mail informado já foi cadastrado!');
+
+      const urlGravatar = convertEmailToUrlGravatar(email);
       
       const passwordEncrypted = UsersControllers.encryptPassword(password);
       
@@ -225,6 +228,7 @@ export default class UsersControllers {
         first_name: firstName,
         last_name: lastName,
         email,
+        avatar: urlGravatar,
         password: passwordEncrypted,
       })
       .then(() => response.status(201).send())
@@ -254,7 +258,7 @@ export default class UsersControllers {
         .first()
         .catch((err) => console.log(err));
 
-      if (oldUrlAvatar) {
+      if (oldUrlAvatar && !oldUrlAvatar.includes('gravatar.com')) {
         UsersControllers.removeImage(request.file.destination, oldUrlAvatar);
       }
 
