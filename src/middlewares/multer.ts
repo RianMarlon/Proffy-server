@@ -32,6 +32,7 @@ const multerConfig = multer({
     const allowedMimes = [
       'image/jpeg',
       'image/pjpeg',
+      'image/jpg',
       'image/png'
     ];
 

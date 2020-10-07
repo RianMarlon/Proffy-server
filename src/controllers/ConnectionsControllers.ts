@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 
 import db from '../database/connection';
+import { notExistOrError } from '../utils/validate';
 
 export default class ConnectionsControllers {
   async getCount(request: Request, response: Response) {
@@ -25,9 +26,8 @@ export default class ConnectionsControllers {
       .first();
     
     try {
-      if (classByIdUser) {
-        throw 'Não entre em contato com você mesmo, a conexão não será contada!';
-      }
+      notExistOrError(classByIdUser, 
+        'Não entre em contato com você mesmo, a conexão não será contada!');
 
       if (connectionByUserAndClass) {
         return;
