@@ -21,9 +21,10 @@ export interface ClassItem {
   week_day: number,
   from: number,
   to: number,
+  id_favorite: boolean,
 }
 
-interface ClassWithSchedules {
+export interface ClassWithSchedules {
   id_class: number,
   subject: string,
   cost: number,
@@ -39,9 +40,10 @@ interface ClassWithSchedules {
     from: string,
     to: string,
   }],
+  is_favorite: boolean,
 }
 
-interface ScheduleItem {
+export interface ScheduleItem {
   id_class_schedule: number,
   week_day: number,
   from: string,
@@ -67,6 +69,7 @@ export default class ClassesController {
         from: '',
         to: '',
       }],
+      is_favorite: false
     }
   
     classes.forEach((classItem: ClassItem, index: number) => {
@@ -88,6 +91,7 @@ export default class ClassesController {
         data.whatsapp = classItem.whatsapp;
         data.biography = classItem.biography;
         data.schedules = [{ ...schedule }];
+        data.is_favorite = typeof classItem.id_favorite == 'number' ? true : false;
       }
   
       else {
@@ -99,6 +103,7 @@ export default class ClassesController {
   }
 
   async getWithSchedules(request: Request, response: Response) {
+    const { id } = request.body;
     const filters = request.query;
 
     const idSubject = filters.id_subject as string;
@@ -148,7 +153,11 @@ export default class ClassesController {
       })
       .join('subjects', 'classes.id_subject', '=', `subjects.id`)
       .join('users', 'classes.id_user', '=', 'users.id')
-      .join('class_schedules', 'classes.id', '=', 'class_schedules.id_class');
+      .join('class_schedules', 'classes.id', '=', 'class_schedules.id_class')
+      .joinRaw(`
+        LEFT JOIN favorites 
+        ON (favorites.id_class = classes.id AND favorites.id_user = ${parseInt(id)})
+      `);
 
     const classesByPage = await queryAllClasses
       .select([
@@ -156,7 +165,8 @@ export default class ClassesController {
         'classes.*',
         'class_schedules.*',
         'class_schedules.id as id_class_schedule',
-        'subjects.*'
+        'subjects.*',
+        'favorites.id as id_favorite',
       ])
       .from(db.raw(`(${subselectClasses} limit ?? offset ??) as classes`, [
         limit, offset
@@ -167,11 +177,9 @@ export default class ClassesController {
       ]);
 
     const countTeachersAndClasses = await db('classes')
-      .countDistinct('classes.id_user')
-      .countDistinct('classes.id');
+      .countDistinct('classes.id_user');
 
     const quantityTeachers = countTeachersAndClasses[0]['count(distinct `classes`.`id_user`)'];
-    const quantityClasses = countTeachersAndClasses[0]['count(distinct `classes`.`id`)'];
 
     const classesIds: number[] = [];
     const classesWithSchedules: ClassWithSchedules[] = [];
@@ -193,11 +201,10 @@ export default class ClassesController {
     });
 
     const classesWithSchedulesData = {
-      classesByPage: [
+      classes_by_page: [
        ...classesWithSchedules
       ],
-      quantityTeachers,
-      quantityClasses,
+      quantity_teachers: quantityTeachers,
     };
 
     return response.json(classesWithSchedulesData);
