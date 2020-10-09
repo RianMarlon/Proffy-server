@@ -2,8 +2,6 @@ import Knex from 'knex';
 
 export async function up(knex: Knex) {
   return knex.schema.createTable('favorites', (table) => {
-    table.increments('id').primary();
-
     table.integer('id_user')
       .notNullable()
       .references('id')
@@ -17,6 +15,8 @@ export async function up(knex: Knex) {
       .inTable('classes')
       .onUpdate('CASCADE')
       .onDelete('CASCADE');
+
+    table.primary(['id_user', 'id_class']);
   });
 }
 

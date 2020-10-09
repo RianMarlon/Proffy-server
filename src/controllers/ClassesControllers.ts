@@ -166,7 +166,7 @@ export default class ClassesController {
         'class_schedules.*',
         'class_schedules.id as id_class_schedule',
         'subjects.*',
-        'favorites.id as id_favorite',
+        'favorites.id_class as id_favorite',
       ])
       .from(db.raw(`(${subselectClasses} limit ?? offset ??) as classes`, [
         limit, offset
@@ -199,7 +199,7 @@ export default class ClassesController {
 
       classesWithSchedules.push({ ...classWithSchedules });
     });
-
+    
     const classesWithSchedulesData = {
       classes_by_page: [
        ...classesWithSchedules
