@@ -3,6 +3,7 @@ import express from 'express';
 import SubjectsControllers from './controllers/SubjectsControllers';
 import UsersControllers from './controllers/UsersControllers';
 import ClassesControllers from './controllers/ClassesControllers';
+import FavoritesControllers from './controllers/FavoritesControllers';
 import ConnectionsControllers from './controllers/ConnectionsControllers';
 
 import authenticate from './middlewares/auth';
@@ -13,6 +14,7 @@ import multerConfig from './middlewares/multer';
 const routes = express.Router();
 const subjectsControllers = new SubjectsControllers()
 const classesControllers = new ClassesControllers();
+const favoritesControllers = new FavoritesControllers();
 const connectionsControllers = new ConnectionsControllers();
 const usersControllers = new UsersControllers();
 const authControllers = new AuthControllers();
@@ -31,6 +33,10 @@ routes.put('/me', multerConfig.single('avatar'), authenticate, usersControllers.
 routes.all('/classes', authenticate);
 routes.get('/classes', classesControllers.getWithSchedules);
 routes.post('/classes', classesControllers.insert);
+
+routes.all('/favorites', authenticate);
+routes.get('/favorites', favoritesControllers.getWithSchedules);
+routes.post('/favorites', favoritesControllers.insertOrDelete);
 
 routes.all('/connections', authenticate);
 routes.get('/connections', connectionsControllers.getCount);
