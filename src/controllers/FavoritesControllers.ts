@@ -8,24 +8,7 @@ import ClassesController, { ClassItem, ClassWithSchedules } from './ClassesContr
 export default class FavoritesControllers {
   
   static convertByIdToWithSchedules(classes: ClassItem[]) {
-    const data: ClassWithSchedules = {
-      id_class: 0,
-      subject: '',
-      cost: 0,
-      last_name: '',
-      first_name: '',
-      email: '',
-      avatar: '',
-      whatsapp: '',
-      biography: '',
-      schedules: [{
-        id_class_schedule: 0,
-        week_day: '',
-        from: '',
-        to: '',
-      }],
-      is_favorite: false
-    }
+    const data: ClassWithSchedules = {} as ClassWithSchedules;
   
     classes.forEach((classItem: ClassItem, index: number) => {
       const schedule = {
@@ -46,7 +29,7 @@ export default class FavoritesControllers {
         data.whatsapp = classItem.whatsapp;
         data.biography = classItem.biography;
         data.schedules = [{ ...schedule }];
-        data.is_favorite = typeof classItem.id_favorite == 'number' ? true : false;
+        data.is_favorite = true;
       }
   
       else {
@@ -61,32 +44,26 @@ export default class FavoritesControllers {
     const { id } = request.body;
     const filters = request.query;
 
-    const page = parseInt(filters.page as string) || 1;
-    const perPage = parseInt(filters.per_page as string) || 1;
+    const page = Number(filters.page as string) || 1;
+    const perPage = Number(filters.per_page as string) || 1;
 
     const limit = perPage;
     const offset = perPage * (page - 1);
 
-    const subselecFavorites = `
+    const subselectClasses = `
         select classes.* from classes
         inner join subjects 
         on (classes.id_subject = subjects.id)
         inner join favorites
-        on (favorites.id_class = classes.id)
-        where favorites.id_user = ${parseInt(id)}
+        on (classes.id = favorites.id_class)
+        where favorites.id_user = ??
       `
     ;
 
     const queryAllClassesFavorites = db('classes')
-      .whereExists(function() {
-        this.select('class_schedules.*')
-          .from('class_schedules')
-          .whereRaw('`class_schedules`.`id_class` = `classes`.`id`');
-      })
       .join('subjects', 'classes.id_subject', '=', `subjects.id`)
       .join('users', 'classes.id_user', '=', 'users.id')
       .join('class_schedules', 'classes.id', '=', 'class_schedules.id_class')
-      .join('favorites', 'classes.id', '=', 'favorites.id_class');
 
     const classesByPage = await queryAllClassesFavorites
       .select([
@@ -95,10 +72,9 @@ export default class FavoritesControllers {
         'class_schedules.*',
         'class_schedules.id as id_class_schedule',
         'subjects.*',
-        'favorites.id_class as id_favorite'
       ])
-      .from(db.raw(`(${subselecFavorites} limit ?? offset ??) as classes`, [
-        limit, offset
+      .from(db.raw(`(${subselectClasses} limit ?? offset ??) as classes`, [
+        id, limit, offset
       ]))
       .orderBy([
         'class_schedules.week_day',
@@ -125,7 +101,7 @@ export default class FavoritesControllers {
         return classId === classItem.id_class;
       });
 
-      const classWithSchedules = ClassesController.convertByIdToWithSchedules(classesById);
+      const classWithSchedules = FavoritesControllers.convertByIdToWithSchedules(classesById);
 
       favoritesWithSchedules.push({ ...classWithSchedules });
     });

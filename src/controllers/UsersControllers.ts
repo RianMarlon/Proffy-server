@@ -73,23 +73,7 @@ export default class UsersControllers {
   }
 
   static convertByIdToWithSchedules(user: UserItem[]) {
-    const data: UsersWithClass = {
-      subject: '',
-      cost: 0,
-      last_name: '',
-      first_name: '',
-      email: '',
-      avatar: '',
-      whatsapp: '',
-      biography: '',
-      id_class: 0,
-      schedules: [{
-        id_class_schedule: 0,
-        week_day: 0,
-        from: '',
-        to: '',
-      }],
-    }
+    const data: UsersWithClass = {} as UsersWithClass;
   
     user.forEach((userItem: UserItem, index: number) => {
       const schedule = {
@@ -299,7 +283,7 @@ export default class UsersControllers {
         })
         .where('id', '=', idUser);
 
-      const newCost = parseFloat(cost.replace(',', '.'));
+      const newCost = Number(cost.replace(',', '.'));
 
       await transaction('classes').update({
           cost: newCost.toFixed(2),

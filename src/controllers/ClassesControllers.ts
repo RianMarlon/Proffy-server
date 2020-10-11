@@ -53,24 +53,7 @@ export interface ScheduleItem {
 export default class ClassesController {
   
   static convertByIdToWithSchedules(classes: ClassItem[]) {
-    const data: ClassWithSchedules = {
-      id_class: 0,
-      subject: '',
-      cost: 0,
-      last_name: '',
-      first_name: '',
-      email: '',
-      avatar: '',
-      whatsapp: '',
-      biography: '',
-      schedules: [{
-        id_class_schedule: 0,
-        week_day: '',
-        from: '',
-        to: '',
-      }],
-      is_favorite: false
-    }
+    const data: ClassWithSchedules = {} as ClassWithSchedules;
   
     classes.forEach((classItem: ClassItem, index: number) => {
       const schedule = {
@@ -110,8 +93,8 @@ export default class ClassesController {
     const week_day = filters.week_day as string;
     const time = filters.time as string;
     
-    const page = parseInt(filters.page as string) || 1;
-    const perPage = parseInt(filters.per_page as string) || 1;
+    const page = Number(filters.page as string) || 1;
+    const perPage = Number(filters.per_page as string) || 1;
 
     const timeInMinutes = convertHourToMinute(time);
 
@@ -156,8 +139,8 @@ export default class ClassesController {
       .join('class_schedules', 'classes.id', '=', 'class_schedules.id_class')
       .joinRaw(`
         LEFT JOIN favorites 
-        ON (favorites.id_class = classes.id AND favorites.id_user = ${parseInt(id)})
-      `);
+        ON (favorites.id_class = classes.id AND favorites.id_user = ??)
+      `, [Number(id)]);
 
     const classesByPage = await queryAllClasses
       .select([
@@ -249,7 +232,7 @@ export default class ClassesController {
         })
         .where('id', '=', idUser);
 
-      const newCost = parseFloat(cost.replace(',', '.'));
+      const newCost = Number(cost.replace(',', '.'));
         
       const insertedClassesIds = await transaction('classes').insert({
         id_user: idUser,
