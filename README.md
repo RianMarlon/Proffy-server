@@ -1,6 +1,6 @@
 # Funcionalidades
 
-# Autenticação
+## Autenticação
 
 - Middleware para verificar se o usuário possui um token válido de acesso;
 - Rota para validar o token;
@@ -27,4 +27,4 @@
 
 ## Matérias
 
--- Rota para listar as matérias;
+- Rota para listar as matérias;
