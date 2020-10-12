@@ -7,10 +7,10 @@
     "node": "12.x"
   },
   "scripts": {
-    "start": "node dist/index.ts",
-    "dev": "tsnd --transpile-only --ignore-watch node_modules --respawn ./index.ts",
-    "knex:migrate": "knex --knexfile dist/knexfile.js migrate:latest",
-    "knex:rollback": "knex --knexfile dist/knexfile.js migrate:rollback",
+    "start": "node -r esm index.ts",
+    "dev": "tsnd --transpile-only --ignore-watch node_modules --respawn index.ts",
+    "knex:migrate": "knex --knexfile knexfile.ts migrate:latest",
+    "knex:rollback": "knex --knexfile knexfile.ts migrate:rollback",
     "build": "tsc"
   },
   "devDependencies": {
