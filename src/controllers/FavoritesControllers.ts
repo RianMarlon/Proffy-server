@@ -85,7 +85,7 @@ export default class FavoritesControllers {
       .countDistinct('favorites.id_class')
       .where('favorites.id_user', '=', id);
 
-    const quantityFavorites = countFavorites[0]['count(distinct favorites.id_class)'];
+    const quantityFavorites = countFavorites[0]['count'];
 
     const favoritesIds: number[] = [];
     const favoritesWithSchedules: ClassWithSchedules[] = [];
