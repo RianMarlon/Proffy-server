@@ -101,11 +101,12 @@ export default class ClassesController {
     const limit = perPage;
     const offset = perPage * (page - 1);
 
-    const subjectById = await db('subjects')
+    const subjectById = idSubject && await db('subjects')
       .where('id', '=', idSubject)
       .first();
 
-    const whereClassByIdSubject = await db('classes')
+    const whereClassByIdSubject = idSubject && await db('classes')
+      .select('classes.*')
       .join('subjects', 'classes.id_subject', 'subjects.id')
       .where('subjects.id', '=', idSubject)
       .toString();
@@ -138,8 +139,8 @@ export default class ClassesController {
       .join('users', 'classes.id_user', '=', 'users.id')
       .join('class_schedules', 'classes.id', '=', 'class_schedules.id_class')
       .joinRaw(`
-        LEFT JOIN favorites 
-        ON (favorites.id_class = classes.id AND favorites.id_user = ??)
+        left join favorites 
+        on favorites.id_class = classes.id AND favorites.id_user = ??
       `, [Number(id)]);
 
     const classesByPage = await queryAllClasses
@@ -147,7 +148,6 @@ export default class ClassesController {
         'users.*',
         'classes.*',
         'class_schedules.*',
-        'class_schedules.id as id_class_schedule',
         'subjects.*',
         'favorites.id_class as id_favorite',
       ])
@@ -161,8 +161,8 @@ export default class ClassesController {
 
     const countTeachersAndClasses = await db('classes')
       .countDistinct('classes.id_user');
-
-    const quantityTeachers = countTeachersAndClasses[0]['count(distinct classes.id_user)'];
+      
+    const quantityTeachers = countTeachersAndClasses[0]['count'];
 
     const classesIds: number[] = [];
     const classesWithSchedules: ClassWithSchedules[] = [];
