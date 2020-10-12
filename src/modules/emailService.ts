@@ -4,13 +4,14 @@ import 'dotenv/config';
 
 const hbs = require('nodemailer-express-handlebars');
 
-let transport = nodemailer.createTransport({
+const transport = nodemailer.createTransport({
   host: process.env.EMAIL_SERVICE_HOST,
-  port: process.env.EMAIL_SERVICE_PORT,
+  port: Number(process.env.EMAIL_SERVICE_PORT),
   auth: {
-    user: process.env.EMAIL_SERVICE_USER,
-    pass: process.env.EMAIL_SERVICE_PASS
-  }
+  	user: process.env.EMAIL_SERVICE_USER,
+  	pass: process.env.EMAIL_SERVICE_PASS
+  },
+  tls: { rejectUnauthorized: false }
 });
 
 transport.use('compile', hbs({
