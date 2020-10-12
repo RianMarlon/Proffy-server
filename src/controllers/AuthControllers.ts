@@ -34,7 +34,7 @@ export default class AuthControllers {
         id: userByEmail.id,
       }
 
-      const token = jwt.sign({ ...payload }, process.env.AUTH_SECRET, {
+      const token = jwt.sign({ ...payload }, process.env.AUTH_SECRET || '', {
         expiresIn: remember_me ? '7d' : '1d',
       });
       
@@ -56,7 +56,7 @@ export default class AuthControllers {
     try {
       existOrError(token, 'Token não informado!');
 
-      const user: any = await promisify(jwt.verify)(token, process.env.AUTH_SECRET);
+      const user: any = await promisify(jwt.verify)(token, process.env.AUTH_SECRET || '');
 
       existOrError(user, 'Token inválido!');
       
@@ -93,15 +93,28 @@ export default class AuthControllers {
         id: userByEmail.id
       }
 
-      const token = jwt.sign({ ...payload }, process.env.AUTH_SECRET, {
+      const token = jwt.sign({ ...payload }, process.env.AUTH_SECRET || '', {
         expiresIn: '30m',
       });
 
       emailService.sendMail({
         to: email as string,
         from: process.env.EMAIL_SERVICE_EMAIL,
-        template: 'auth/forgotPassword',
-        context: { token },
+        html: `
+          <h1>Proffy</h1>
+          <p>
+            Você esqueceu sua senha? Não tem problema, clique 
+            <a href="http://localhost:3000/change-password?token=${token}" target="__blank">
+              aqui
+            </a>
+            e altere sua senha. 
+            <p>
+              Obs: Esse link irá se expirar em 30 minutos, 
+              caso você não consiga alterar sua senha envie seu e-mail novamente 
+              na página "esqueceu sua senha?", para receber outro link.
+            </p>
+          </p>
+        `,
       }, (err: any) => {
         if (err) {
           return response.status(500).json({
@@ -137,7 +150,7 @@ export default class AuthControllers {
       existOrError(confirmPassword, 'Senha de confirmação não informada!');
       equalOrError(password, confirmPassword, 'Senhas informadas não coincidem!');
 
-      const user: any = await promisify(jwt.verify)(token, process.env.AUTH_SECRET);
+      const user: any = await promisify(jwt.verify)(token, process.env.AUTH_SECRET || '');
 
       if (!user) {
         return response.status(401).json({
