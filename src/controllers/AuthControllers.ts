@@ -104,7 +104,7 @@ export default class AuthControllers {
           <h1>Proffy</h1>
           <p>
             Você esqueceu sua senha? Não tem problema, clique 
-            <a href="http://localhost:3000/change-password?token=${token}" target="__blank">
+            <a href="https://proffy-app-web.netlify.app/change-password?token=${token}" target="__blank">
               aqui
             </a>
             e altere sua senha. 
