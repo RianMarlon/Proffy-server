@@ -4,9 +4,11 @@
   "main": "index.ts",
   "license": "MIT",
   "scripts": {
-    "start": "tsnd --transpile-only --ignore-watch node_modules --respawn ./index.ts",
-    "knex:migrate": "knex --knexfile knexfile.ts migrate:latest",
-    "knex:migrate:rollback": "knex --knexfile knexfile.ts migrate:rollback"
+    "start": "node dist/index.ts",
+    "dev": "tsnd --transpile-only --ignore-watch node_modules --respawn ./index.ts",
+    "knex:migrate": "knex --knexfile dist/knexfile.js migrate:latest",
+    "knex:rollback": "knex --knexfile dist/knexfile.js migrate:rollback",
+    "build": "tsc"
   },
   "devDependencies": {
     "@types/bcrypt": "^3.0.0",
