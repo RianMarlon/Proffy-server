@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 import { promisify } from 'util';
+import 'dotenv/config';
 
 import db from '../database/connection';
 import emailService from '../modules/emailService';
@@ -9,11 +10,6 @@ import emailService from '../modules/emailService';
 import { existOrError, equalOrError } from '../utils/validate';
 
 import UsersControllers from './UsersControllers';
-
-const { emailServiceData } = require('../../.env');
-const sender = emailServiceData.email;
-
-const { authSecret } = require('../../.env');
 
 export default class AuthControllers {
   
@@ -38,7 +34,7 @@ export default class AuthControllers {
         id: userByEmail.id,
       }
 
-      const token = jwt.sign({ ...payload }, authSecret, {
+      const token = jwt.sign({ ...payload }, process.env.AUTH_SECRET, {
         expiresIn: remember_me ? '7d' : '1d',
       });
       
@@ -60,7 +56,7 @@ export default class AuthControllers {
     try {
       existOrError(token, 'Token não informado!');
 
-      const user: any = await promisify(jwt.verify)(token, authSecret);
+      const user: any = await promisify(jwt.verify)(token, process.env.AUTH_SECRET);
 
       existOrError(user, 'Token inválido!');
       
@@ -97,13 +93,13 @@ export default class AuthControllers {
         id: userByEmail.id
       }
 
-      const token = jwt.sign({ ...payload }, authSecret, {
+      const token = jwt.sign({ ...payload }, process.env.AUTH_SECRET, {
         expiresIn: '30m',
       });
 
       emailService.sendMail({
         to: email as string,
-        from: sender,
+        from: process.env.EMAIL_SERVICE_EMAIL,
         template: 'auth/forgotPassword',
         context: { token },
       }, (err: any) => {
@@ -141,7 +137,7 @@ export default class AuthControllers {
       existOrError(confirmPassword, 'Senha de confirmação não informada!');
       equalOrError(password, confirmPassword, 'Senhas informadas não coincidem!');
 
-      const user: any = await promisify(jwt.verify)(token, authSecret);
+      const user: any = await promisify(jwt.verify)(token, process.env.AUTH_SECRET);
 
       if (!user) {
         return response.status(401).json({
