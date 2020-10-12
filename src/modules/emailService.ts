@@ -1,15 +1,15 @@
 import path from 'path';
 import nodemailer from 'nodemailer';
+import 'dotenv/config';
 
 const hbs = require('nodemailer-express-handlebars');
-const { emailServiceData } = require('../../.env');
 
 let transport = nodemailer.createTransport({
-  host: emailServiceData.host,
-  port: emailServiceData.host,
+  host: process.env.EMAIL_SERVICE_HOST,
+  port: process.env.EMAIL_SERVICE_PORT,
   auth: {
-    user: emailServiceData.user,
-    pass: emailServiceData.pass
+    user: process.env.EMAIL_SERVICE_USER,
+    pass: process.env.EMAIL_SERVICE_PASS
   }
 });
 
