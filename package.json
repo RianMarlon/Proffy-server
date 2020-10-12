@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "main": "index.ts",
   "license": "MIT",
+  "engines": {
+    "node": "12.x"
+  },
   "scripts": {
     "start": "node dist/index.ts",
     "dev": "tsnd --transpile-only --ignore-watch node_modules --respawn ./index.ts",
