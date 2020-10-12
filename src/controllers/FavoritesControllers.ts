@@ -61,7 +61,7 @@ export default class FavoritesControllers {
     ;
 
     const queryAllClassesFavorites = db('classes')
-      .join('subjects', 'classes.id_subject', '=', `subjects.id`)
+      .join('subjects', 'classes.id_subject', '=', 'subjects.id')
       .join('users', 'classes.id_user', '=', 'users.id')
       .join('class_schedules', 'classes.id', '=', 'class_schedules.id_class')
 
@@ -85,7 +85,7 @@ export default class FavoritesControllers {
       .countDistinct('favorites.id_class')
       .where('favorites.id_user', '=', id);
 
-    const quantityFavorites = countFavorites[0]['count(distinct `favorites`.`id_class`)'];
+    const quantityFavorites = countFavorites[0]['count(distinct favorites.id_class)'];
 
     const favoritesIds: number[] = [];
     const favoritesWithSchedules: ClassWithSchedules[] = [];

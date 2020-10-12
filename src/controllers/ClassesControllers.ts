@@ -123,18 +123,18 @@ export default class ClassesController {
       .whereExists(function() {
         this.select('class_schedules.*')
           .from('class_schedules')
-          .whereRaw('`class_schedules`.`id_class` = `classes`.`id`');
+          .whereRaw('class_schedules.id_class = classes.id');
 
         if (week_day) {
-          this.whereRaw('`class_schedules`.`week_day` = ??', [Number(week_day)]);
+          this.whereRaw('class_schedules.week_day = ??', [Number(week_day)]);
         }
 
         if (timeInMinutes) {
-          this.whereRaw('`class_schedules`.`from` <= ??', [timeInMinutes]);
-          this.whereRaw('`class_schedules`.`to` > ??', [timeInMinutes]);
+          this.whereRaw('class_schedules.from <= ??', [timeInMinutes]);
+          this.whereRaw('class_schedules.to > ??', [timeInMinutes]);
         }
       })
-      .join('subjects', 'classes.id_subject', '=', `subjects.id`)
+      .join('subjects', 'classes.id_subject', '=', 'subjects.id')
       .join('users', 'classes.id_user', '=', 'users.id')
       .join('class_schedules', 'classes.id', '=', 'class_schedules.id_class')
       .joinRaw(`
@@ -162,7 +162,7 @@ export default class ClassesController {
     const countTeachersAndClasses = await db('classes')
       .countDistinct('classes.id_user');
 
-    const quantityTeachers = countTeachersAndClasses[0]['count(distinct `classes`.`id_user`)'];
+    const quantityTeachers = countTeachersAndClasses[0]['count(distinct classes.id_user)'];
 
     const classesIds: number[] = [];
     const classesWithSchedules: ClassWithSchedules[] = [];
@@ -238,7 +238,7 @@ export default class ClassesController {
         id_user: idUser,
         id_subject: idSubject,
         cost: newCost.toFixed(2),
-      });
+      }).returning('id');
   
       const idClass = insertedClassesIds[0];
   
