@@ -3,8 +3,6 @@ import { promisify } from 'util';
 import jwt from 'jsonwebtoken';
 import db from '../database/connection';
 
-const { authSecret } = require('../../.env');
-
 export default async function (request: Request, response: Response, next: NextFunction) {
   const authHeader = request.headers.authorization;
 
@@ -14,7 +12,7 @@ export default async function (request: Request, response: Response, next: NextF
     }
   
     const [scheme, token] = authHeader.split(' ');
-    const user: any = await promisify(jwt.verify)(token, authSecret);
+    const user: any = await promisify(jwt.verify)(token, process.env.AUTH_SECRET || '');
     
     db('users').where('id', '=', user.id)
       .first()
