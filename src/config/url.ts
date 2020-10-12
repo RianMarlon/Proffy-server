@@ -1,3 +1,3 @@
-const URL_BACKEND = 'http://192.168.1.6:3333';
+const URL_BACKEND = 'https://proffy-app-server.herokuapp.com/';
 
 export default URL_BACKEND;
