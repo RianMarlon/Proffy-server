@@ -5,6 +5,7 @@ import convertHourToMinute from '../utils/convertHourToMinute';
 import convertMinutesToTime from '../utils/convertMinutesToTime';
 import convertNumberToWeekDay from '../utils/convertNumberToWeekDay';
 import { existOrError, notExistOrError } from '../utils/validate';
+import URL_BACKEND from '../config/url';
 
 export interface ClassItem {
   id_class: number,
@@ -70,7 +71,9 @@ export default class ClassesController {
         data.first_name = classItem.first_name;
         data.last_name = classItem.last_name
         data.email = classItem.email;
-        data.avatar = classItem.avatar;
+        data.avatar = !classItem.avatar.includes('gravatar.com') 
+          ? `${URL_BACKEND}/files/${classItem.avatar}`
+          :  classItem.avatar;
         data.whatsapp = classItem.whatsapp;
         data.biography = classItem.biography;
         data.schedules = [{ ...schedule }];

@@ -64,12 +64,10 @@ const compressImage = (file: any, size: number) => {
       const newFileName = fileNameSplitted.slice(0, pathSplitted.length - 1)
         + '.png';
 
-      const urlImage = `${URL_BACKEND}/files/${newFileName}`;
-
       return {
         id: newFileName,
         path: newPath,
-        url: urlImage,
+        url: newFileName,
       };
   });
 }

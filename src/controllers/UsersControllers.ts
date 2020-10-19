@@ -11,6 +11,7 @@ import convertMinutesToTime from '../utils/convertMinutesToTime';
 import convertHourToMinute from '../utils/convertHourToMinute';
 import convertEmailToUrlGravatar from '../utils/convertEmailToUrlGravatar';
 import compressImage from '../utils/compressImage';
+import URL_BACKEND from '../config/url';
 
 interface UsersWithClass {
   first_name: string,
@@ -89,7 +90,9 @@ export default class UsersControllers {
         data.first_name = userItem.first_name;
         data.last_name = userItem.last_name;
         data.email = userItem.email;
-        data.avatar = userItem.avatar;
+        data.avatar = !userItem.avatar.includes('gravatar.com') 
+          ? `${URL_BACKEND}/files/${userItem.avatar}`
+          :  userItem.avatar;
         data.whatsapp = userItem.whatsapp;
         data.biography = userItem.biography;
         data.id_class = userItem.id_class;
@@ -158,7 +161,9 @@ export default class UsersControllers {
         userData.first_name = user.first_name;
         userData.last_name = user.last_name
         userData.email = user.email;
-        userData.avatar = user.avatar;
+        userData.avatar = !user.avatar.includes('gravatar.com') 
+        ? `${URL_BACKEND}/files/${user.avatar}`
+        :  user.avatar;
 
         return response.json({
           user: {

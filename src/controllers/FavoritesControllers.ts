@@ -3,7 +3,8 @@ import { Request, Response } from 'express';
 import db from '../database/connection';
 import convertMinutesToTime from '../utils/convertMinutesToTime';
 import convertNumberToWeekDay from '../utils/convertNumberToWeekDay';
-import ClassesController, { ClassItem, ClassWithSchedules } from './ClassesControllers';
+import { ClassItem, ClassWithSchedules } from './ClassesControllers';
+import URL_BACKEND from '../config/url';
 
 export default class FavoritesControllers {
   
@@ -25,7 +26,9 @@ export default class FavoritesControllers {
         data.first_name = classItem.first_name;
         data.last_name = classItem.last_name
         data.email = classItem.email;
-        data.avatar = classItem.avatar;
+        data.avatar = !classItem.avatar.includes('gravatar.com') 
+          ? `${URL_BACKEND}/files/${classItem.avatar}`
+          :  classItem.avatar;
         data.whatsapp = classItem.whatsapp;
         data.biography = classItem.biography;
         data.schedules = [{ ...schedule }];
