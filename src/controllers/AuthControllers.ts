@@ -140,6 +140,10 @@ export default class AuthControllers {
       existOrError(confirmPassword, 'Senha de confirmação não informada!');
       equalOrError(password, confirmPassword, 'Senhas informadas não coincidem!');
 
+      if (password.length < 6) {
+        throw 'Senha deve conter, no mínimo, 6 caracteres!';
+      }
+
       const user: any = await promisify(jwt.verify)(token, process.env.AUTH_SECRET || '');
 
       if (!user) {
