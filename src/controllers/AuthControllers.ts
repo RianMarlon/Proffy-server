@@ -98,24 +98,14 @@ export default class AuthControllers {
       });
 
       emailService.sendMail({
-        to: email as string,
-        from: process.env.EMAIL_SERVICE_EMAIL,
-        html: `
-          <h1>Proffy</h1>
-          <p>
-            Você esqueceu sua senha? Não tem problema, clique 
-            <a href="https://proffy-app-web.netlify.app/change-password?token=${token}" target="__blank">
-              aqui
-            </a>
-            e altere sua senha. 
-            <p>
-              Obs: Esse link irá se expirar em 30 minutos, 
-              caso você não consiga alterar sua senha envie seu e-mail novamente 
-              na página "esqueceu sua senha?", para receber outro link.
-            </p>
-          </p>
-        `,
-      }, (err: any) => {
+        from: `Proffy <${process.env.EMAIL_SERVICE_EMAIL}>`,
+        to: email,
+        subject: 'Esqueceu sua senha?',
+        template: 'auth/forgotPassword',
+        context: {
+          token
+        }
+      } as any, (err: any) => {
         if (err) {
           return response.status(500).json({
             error: 'Não foi possível enviar o e-mail!'
