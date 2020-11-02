@@ -8,8 +8,12 @@ const transport = nodemailer.createTransport({
   host: process.env.EMAIL_SERVICE_HOST,
   port: Number(process.env.EMAIL_SERVICE_PORT),
   auth: {
-  	user: process.env.EMAIL_SERVICE_USER,
-  	pass: process.env.EMAIL_SERVICE_PASS
+    type: process.env.EMAIL_SERVICE_TYPE as any,
+    user: process.env.EMAIL_SERVICE_USER,
+    clientId: process.env.EMAIL_SERVICE_CLIENT_ID,
+    clientSecret: process.env.EMAIL_SERVICE_CLIENT_SECRET,
+    refreshToken: process.env.EMAIL_SERVICE_REFRESH_TOKEN,
+    accessToken: process.env.EMAIL_SERVICE_ACCESS_TOKEN,
   },
   tls: { rejectUnauthorized: false }
 });
