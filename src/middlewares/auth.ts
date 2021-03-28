@@ -12,7 +12,7 @@ export default async function (request: Request, response: Response, next: NextF
     }
   
     const [scheme, token] = authHeader.split(' ');
-    const user: any = await promisify(jwt.verify)(token, process.env.AUTH_SECRET || '');
+    const user: any = jwt.verify(token, process.env.AUTH_SECRET as string);
     
     db('users').where('id', '=', user.id)
       .first()
