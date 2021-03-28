@@ -1,7 +1,6 @@
 import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
-import { promisify } from 'util';
 import 'dotenv/config';
 
 import db from '../database/connection';
@@ -56,7 +55,7 @@ export default class AuthControllers {
     try {
       existOrError(token, 'Token não informado!');
 
-      const user: any = await promisify(jwt.verify)(token, process.env.AUTH_SECRET || '');
+      const user: any = jwt.verify(token, process.env.AUTH_SECRET as string);
 
       existOrError(user, 'Token inválido!');
       
@@ -144,7 +143,7 @@ export default class AuthControllers {
         throw 'Senha deve conter, no mínimo, 6 caracteres!';
       }
 
-      const user: any = await promisify(jwt.verify)(token, process.env.AUTH_SECRET || '');
+      const user: any = jwt.verify(token, process.env.AUTH_SECRET as string);
 
       if (!user) {
         return response.status(401).json({
